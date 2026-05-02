@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Patient } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Volume2, VolumeX, Settings, Zap } from 'lucide-react';
+import { Volume2, VolumeX, Settings, Zap, Droplets, TrendingDown } from 'lucide-react';
 import WaveformCanvas from './WaveformCanvas';
 import ResuscitationPanel from './ResuscitationPanel';
+import TamponadeScenario from './TamponadeScenario';
+import HypotensionScenario from './HypotensionScenario';
 import {
   generateECGBuffer, generateABPBuffer, generateSpO2Buffer,
   getDisplayHR, RhythmType, RHYTHM_LABELS, RHYTHM_SEVERITY,
@@ -41,6 +43,8 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
   const [spo2Buffer, setSpo2Buffer] = useState<number[]>([]);
   const [isMutedState, setIsMutedState] = useState(false);
   const [showResuscitation, setShowResuscitation] = useState(false);
+  const [showTamponade, setShowTamponade] = useState(false);
+  const [showHypotension, setShowHypotension] = useState(false);
   const [vfibAmplitude, setVfibAmplitude] = useState(1.0);
   const [showRhythmSelector, setShowRhythmSelector] = useState(false);
   const [currentBP, setCurrentBP] = useState(patient.currentVitals.bloodPressure);
@@ -163,6 +167,14 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
               <Zap size={12}/> РЕАНІМАЦІЯ
             </button>
           )}
+          <button onClick={() => setShowTamponade(true)}
+            className="px-3 py-1.5 bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-bold rounded border border-amber-600 flex items-center gap-1">
+            <Droplets size={12}/> ТАМПОНАДА
+          </button>
+          <button onClick={() => setShowHypotension(true)}
+            className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 text-white text-[10px] font-bold rounded border border-orange-600 flex items-center gap-1">
+            <TrendingDown size={12}/> ГІПОТЕНЗІЯ
+          </button>
           <button onClick={() => { resumeAudioContext(); setShowRhythmSelector(s => !s); }}
             className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-bold rounded border border-gray-700 flex items-center gap-1">
             <Settings size={12}/> РИТМ
@@ -297,6 +309,20 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
         {showResuscitation && (
           <ResuscitationPanel rhythm={rhythm} onRhythmChange={handleRhythmChange}
             onClose={() => setShowResuscitation(false)} patientName={patient.name} />
+        )}
+        {showTamponade && (
+          <TamponadeScenario
+            patientName={patient.name}
+            surgeryType={patient.surgeryType}
+            onClose={() => setShowTamponade(false)}
+          />
+        )}
+        {showHypotension && (
+          <HypotensionScenario
+            patientName={patient.name}
+            surgeryType={patient.surgeryType}
+            onClose={() => setShowHypotension(false)}
+          />
         )}
       </AnimatePresence>
     </div>
