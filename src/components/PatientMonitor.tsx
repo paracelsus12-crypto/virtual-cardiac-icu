@@ -1,3 +1,4 @@
+// PatientMonitor v4 — Philips IntelliVue style
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Patient } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,33 +22,44 @@ interface PatientMonitorProps {
 }
 
 const RHYTHM_OPTIONS: { value: RhythmType; label: string; color: string }[] = [
-  { value: 'sinus',              label: 'Синусовий ритм',       color: 'text-green-400' },
-  { value: 'afib',               label: 'ФП',                   color: 'text-yellow-400' },
-  { value: 'av_block_1',         label: 'АВ-бл. I ст.',         color: 'text-blue-300' },
-  { value: 'av_block_2_mobitz1', label: 'АВ-бл. II (Мобітц I)', color: 'text-yellow-500' },
-  { value: 'av_block_2_mobitz2', label: 'АВ-бл. II (Мобітц II)',color: 'text-orange-400' },
-  { value: 'av_block_3',         label: 'АВ-бл. III (повна)',   color: 'text-orange-500' },
-  { value: 'vtach',              label: 'ШТ 160/хв',            color: 'text-red-400' },
-  { value: 'vfib',               label: 'ФШ',                   color: 'text-red-600' },
-  { value: 'asystole',           label: 'Асистолія',            color: 'text-gray-400' },
+  { value: 'sinus',              label: 'Синусовий ритм',        color: 'text-green-400' },
+  { value: 'afib',               label: 'ФП',                    color: 'text-yellow-400' },
+  { value: 'av_block_1',         label: 'АВ-бл. I ст.',          color: 'text-blue-300' },
+  { value: 'av_block_2_mobitz1', label: 'АВ-бл. II (Мобітц I)',  color: 'text-yellow-500' },
+  { value: 'av_block_2_mobitz2', label: 'АВ-бл. II (Мобітц II)', color: 'text-orange-400' },
+  { value: 'av_block_3',         label: 'АВ-бл. III (повна)',    color: 'text-orange-500' },
+  { value: 'vtach',              label: 'ШТ 160/хв',             color: 'text-red-400' },
+  { value: 'vfib',               label: 'ФШ',                    color: 'text-red-600' },
+  { value: 'asystole',           label: 'Асистолія',             color: 'text-gray-400' },
+];
+
+// Speed control
+export const SPEED_OPTIONS = [
+  { value: 0.5, label: '0.5×' },
+  { value: 1.0, label: '1×'   },
+  { value: 2.0, label: '2×'   },
+  { value: 3.0, label: '3×'   },
 ];
 
 const BUFFER_SIZE = 1000;
 const SAMPLE_RATE = 250;
-const UPDATE_MS = 60;
+const UPDATE_MS   = 60;
 
 export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit }) => {
-  const [rhythm, setRhythm] = useState<RhythmType>('sinus');
-  const [ecgBuffer,  setEcgBuffer]  = useState<number[]>([]);
-  const [abpBuffer,  setAbpBuffer]  = useState<number[]>([]);
-  const [spo2Buffer, setSpo2Buffer] = useState<number[]>([]);
-  const [isMutedState, setIsMutedState] = useState(false);
+  const [rhythm, setRhythm]                   = useState<RhythmType>('sinus');
+  const [ecgBuffer, setEcgBuffer]             = useState<number[]>([]);
+  const [abpBuffer, setAbpBuffer]             = useState<number[]>([]);
+  const [spo2Buffer, setSpo2Buffer]           = useState<number[]>([]);
+  const [isMutedState, setIsMutedState]       = useState(false);
   const [showResuscitation, setShowResuscitation] = useState(false);
-  const [showTamponade, setShowTamponade] = useState(false);
+  const [showTamponade, setShowTamponade]     = useState(false);
   const [showHypotension, setShowHypotension] = useState(false);
-  const [vfibAmplitude, setVfibAmplitude] = useState(1.0);
+  const [vfibAmplitude, setVfibAmplitude]     = useState(1.0);
   const [showRhythmSelector, setShowRhythmSelector] = useState(false);
-  const [currentBP, setCurrentBP] = useState(patient.currentVitals.bloodPressure);
+  const [currentBP, setCurrentBP]             = useState(patient.currentVitals.bloodPressure);
+  const [speed, setSpeed]                     = useState(1.0);
+  const [scenarioKey, setScenarioKey]         = useState(0);
+  const [now, setNow]                         = useState(new Date());
 
   const beepTimerRef = useRef<number>(0);
   const timeRef      = useRef(0);
@@ -55,30 +67,34 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
   rhythmRef.current  = rhythm;
   const vfibAmpRef   = useRef(vfibAmplitude);
   vfibAmpRef.current = vfibAmplitude;
+  const speedRef     = useRef(speed);
+  speedRef.current   = speed;
+
+  // Clock
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const { currentVitals } = patient;
-  const displayHR       = getDisplayHR(rhythm, currentVitals.heartRate);
-  const severity        = RHYTHM_SEVERITY[rhythm];
-  const isCritical      = severity === 'critical';
-  const isNoOutput      = rhythm === 'vfib' || rhythm === 'asystole';
+  const displayHR  = getDisplayHR(rhythm, currentVitals.heartRate);
+  const severity   = RHYTHM_SEVERITY[rhythm];
+  const isCritical = severity === 'critical';
+  const isNoOutput = rhythm === 'vfib' || rhythm === 'asystole';
 
   const generateChunk = useCallback(() => {
-    const dur = UPDATE_MS / 1000;
+    const dur = (UPDATE_MS / 1000) * speedRef.current;
     const t0  = timeRef.current;
     timeRef.current += dur;
-
     const [sys, dia] = currentBP.split('/').map(Number);
-
     const ecg  = generateECGBuffer(rhythmRef.current, currentVitals.heartRate, dur, SAMPLE_RATE, vfibAmpRef.current, t0);
-    const abp  = generateABPBuffer(currentVitals.heartRate, sys || 120, dia || 80, dur, SAMPLE_RATE, rhythmRef.current, t0);
+    const abp  = generateABPBuffer(currentVitals.heartRate, sys||120, dia||80, dur, SAMPLE_RATE, rhythmRef.current, t0);
     const spo2 = generateSpO2Buffer(currentVitals.heartRate, currentVitals.spo2, dur, SAMPLE_RATE, rhythmRef.current, t0);
-
     setEcgBuffer(prev  => [...prev,  ...ecg].slice(-BUFFER_SIZE));
     setAbpBuffer(prev  => [...prev,  ...abp].slice(-BUFFER_SIZE));
     setSpo2Buffer(prev => [...prev, ...spo2].slice(-BUFFER_SIZE));
-
     if (!isNoOutput) {
-      setCurrentBP(`${Math.round(Math.max(70,  Math.min(200, sys + (Math.random()-0.5)*1.5)))}/${Math.round(Math.max(40, Math.min(120, dia + (Math.random()-0.5)*1)))}`);
+      setCurrentBP(`${Math.round(Math.max(70, Math.min(200, sys+(Math.random()-0.5)*1.5)))}/${Math.round(Math.max(40, Math.min(120, dia+(Math.random()-0.5)*1)))}`);
     }
   }, [currentVitals, currentBP, isNoOutput]);
 
@@ -87,283 +103,364 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
     return () => clearInterval(id);
   }, [generateChunk]);
 
-  // Звук
   useEffect(() => {
-    clearInterval(beepTimerRef.current);
-    stopAlarm();
-    if (rhythm === 'vfib' || rhythm === 'asystole') {
-      startAlarm('critical');
-      setShowResuscitation(true);
-    } else if (rhythm === 'vtach' || rhythm === 'av_block_3') {
-      startAlarm('warning');
-    } else {
-      const interval = (60 / (displayHR || 75)) * 1000;
+    clearInterval(beepTimerRef.current); stopAlarm();
+    if (rhythm === 'vfib' || rhythm === 'asystole') { startAlarm('critical'); setShowResuscitation(true); }
+    else if (rhythm === 'vtach' || rhythm === 'av_block_3') startAlarm('warning');
+    else {
+      const interval = (60/(displayHR||75))*1000/speedRef.current;
       beepTimerRef.current = window.setInterval(() => {
         if (!getMuted()) rhythm === 'afib' ? playAfibBeep() : playNormalBeep();
       }, interval);
     }
     return () => { clearInterval(beepTimerRef.current); stopAlarm(); };
-  }, [rhythm, displayHR]);
+  }, [rhythm, displayHR, speed]);
 
-  // VFib decay
   useEffect(() => {
     if (rhythm !== 'vfib') { setVfibAmplitude(1.0); return; }
-    const id = window.setInterval(() => setVfibAmplitude(p => Math.max(0.08, p - 0.004)), 500);
+    const id = window.setInterval(() => setVfibAmplitude(p => Math.max(0.08, p-0.004)), 500);
     return () => clearInterval(id);
   }, [rhythm]);
 
   const handleRhythmChange = (r: RhythmType) => {
-    resumeAudioContext();
-    setRhythm(r);
-    setShowRhythmSelector(false);
+    resumeAudioContext(); setRhythm(r); setShowRhythmSelector(false);
     if (r === 'sinus') setShowResuscitation(false);
     if (r === 'vfib' || r === 'asystole') setShowResuscitation(true);
   };
-
   const handleMute = () => {
     resumeAudioContext();
-    const m = !isMutedState;
-    setIsMutedState(m); setMuted(m);
+    const m = !isMutedState; setIsMutedState(m); setMuted(m);
+  };
+  const handleReset = () => {
+    setScenarioKey(k => k+1);
+    setShowResuscitation(false); setShowTamponade(false); setShowHypotension(false);
+    setRhythm('sinus'); setVfibAmplitude(1.0);
+    stopAlarm();
   };
 
-  const rhythmColor =
-    severity === 'critical' ? '#ef4444' :
-    severity === 'warning'  ? '#f59e0b' : '#22c55e';
+  const rhythmColor = severity==='critical'?'#ef4444':severity==='warning'?'#f59e0b':'#22c55e';
+  const hrDisplay   = rhythm==='vfib'?'---':rhythm==='asystole'?'000':String(displayHR??'--');
+  const timeStr     = now.toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
-  const hrDisplay =
-    rhythm === 'vfib'     ? '---' :
-    rhythm === 'asystole' ? '000' :
-    String(displayHR ?? '--');
-
-  // Кольори кривих (відповідно до атласу)
-  const ECG_COLOR  = '#22c55e';   // зелений
-  const ABP_COLOR  = '#ef4444';   // червоний ← виправлено
-  const SPO2_COLOR = '#3b82f6';   // синій
+  // Philips color scheme
+  const ECG_COLOR  = '#00ff88';
+  const ABP_COLOR  = '#ff4444';
+  const SPO2_COLOR = '#00aaff';
+  const RR_COLOR   = '#ffee00';
 
   return (
-    <div className="flex flex-col h-full relative">
-      {/* Header */}
-      <div className="p-3 border-b border-gray-800 flex justify-between items-center bg-[#0B0E14] shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-white">
-            {patient.name}
-            <span className="text-gray-500 font-normal ml-2 font-mono text-sm">Ліжко {patient.bedNumber}</span>
-          </h2>
-          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-            <p className="text-[11px] text-gray-400 uppercase tracking-tight">{patient.surgeryType}</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded border"
-              style={{ color: rhythmColor, borderColor: rhythmColor+'50', background: rhythmColor+'12' }}>
-              {RHYTHM_LABELS[rhythm]}
+    <div className="flex flex-col h-full relative" style={{ background:'#000810', color:'white' }}>
+
+      {/* === PHILIPS TOP BAR === */}
+      <div className="shrink-0 px-3 py-1.5 flex items-center justify-between border-b"
+        style={{ borderColor:'#0d2035', background:'#000f1e' }}>
+        {/* Patient info */}
+        <div className="flex items-center gap-4">
+          <div>
+            <span className="font-bold text-white text-sm tracking-wide">{patient.name}</span>
+            <span className="ml-2 text-[10px] font-mono" style={{ color:'#4488aa' }}>
+              Ліжко {patient.bedNumber}
             </span>
-            {patient.preExistingConditions.slice(0,2).map((c,i) => (
-              <span key={i} className="text-[9px] bg-gray-800 text-gray-400 px-1.5 rounded border border-gray-700">{c}</span>
-            ))}
+          </div>
+          <div className="text-[10px]" style={{ color:'#4488aa' }}>
+            {patient.age} р. · {patient.gender==='M'?'чол.':'жін.'}
+          </div>
+          <div className="text-[10px] max-w-[180px] truncate" style={{ color:'#336677' }}>
+            {patient.surgeryType}
           </div>
         </div>
-        <div className="flex gap-2 items-center">
+
+        {/* Clock + controls */}
+        <div className="flex items-center gap-2">
+          {/* Speed */}
+          <div className="flex items-center gap-1 mr-1">
+            {SPEED_OPTIONS.map(s => (
+              <button key={s.value} onClick={() => setSpeed(s.value)}
+                className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-colors"
+                style={{
+                  background: speed===s.value ? '#0055aa' : '#001828',
+                  color: speed===s.value ? '#ffffff' : '#446688',
+                  border: '1px solid ' + (speed===s.value ? '#0077dd' : '#0d2035'),
+                }}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Reset */}
+          <button onClick={handleReset}
+            className="px-2 py-0.5 rounded text-[9px] font-bold"
+            style={{ background:'#001828', color:'#446688', border:'1px solid #0d2035' }}
+            title="Скинути сценарій">
+            ↺ Reset
+          </button>
+
+          {/* Scenario buttons */}
           {isCritical && (
             <button onClick={() => setShowResuscitation(true)}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded flex items-center gap-1 animate-pulse">
-              <Zap size={12}/> РЕАНІМАЦІЯ
+              className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 animate-pulse"
+              style={{ background:'#550000', color:'#ff6666', border:'1px solid #880000' }}>
+              <Zap size={11}/> РЕАНІМАЦІЯ
             </button>
           )}
           <button onClick={() => setShowTamponade(true)}
-            className="px-3 py-1.5 bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-bold rounded border border-amber-600 flex items-center gap-1">
-            <Droplets size={12}/> ТАМПОНАДА
+            className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{ background:'#3a2000', color:'#ffaa44', border:'1px solid #553300' }}>
+            <Droplets size={11}/> ТАМПОНАДА
           </button>
           <button onClick={() => setShowHypotension(true)}
-            className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 text-white text-[10px] font-bold rounded border border-orange-600 flex items-center gap-1">
-            <TrendingDown size={12}/> ГІПОТЕНЗІЯ
+            className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{ background:'#2a1500', color:'#ff8833', border:'1px solid #443300' }}>
+            <TrendingDown size={11}/> ГІПОТЕНЗІЯ
           </button>
-          <button onClick={() => { resumeAudioContext(); setShowRhythmSelector(s => !s); }}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-bold rounded border border-gray-700 flex items-center gap-1">
-            <Settings size={12}/> РИТМ
+
+          {/* Rhythm */}
+          <button onClick={() => { resumeAudioContext(); setShowRhythmSelector(s=>!s); }}
+            className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{ background:'#001828', color:'#4499cc', border:'1px solid #0d2035' }}>
+            <Settings size={11}/> РИТМ
           </button>
+
+          {/* Mute */}
           <button onClick={handleMute}
-            className="p-2 bg-gray-800 hover:bg-gray-700 rounded border border-gray-700">
-            {isMutedState ? <VolumeX size={14} className="text-gray-400"/> : <Volume2 size={14} className="text-green-400"/>}
+            className="p-1.5 rounded"
+            style={{ background:'#001828', border:'1px solid #0d2035' }}>
+            {isMutedState
+              ? <VolumeX size={13} style={{ color:'#446688' }}/>
+              : <Volume2 size={13} style={{ color:'#22c55e' }}/>}
           </button>
-          <button onClick={onEdit}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-bold rounded border border-gray-700 uppercase">
-            Пороги
-          </button>
+
+          {/* Clock */}
+          <div className="font-mono text-xs ml-1" style={{ color:'#aaccee', minWidth:60 }}>
+            {timeStr}
+          </div>
         </div>
       </div>
 
       {/* Rhythm dropdown */}
       <AnimatePresence>
         {showRhythmSelector && (
-          <motion.div initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-6 }}
-            className="absolute top-[68px] right-2 z-50 bg-[#11141D] border border-gray-700 rounded-lg shadow-2xl p-2 w-80">
-            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest px-1 pb-1.5 border-b border-gray-800 mb-1.5">
+          <motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}}
+            className="absolute top-[42px] right-2 z-50 rounded shadow-2xl p-2 grid grid-cols-2 gap-1 w-72"
+            style={{ background:'#001020', border:'1px solid #0d2035' }}>
+            <div className="col-span-2 text-[9px] font-bold uppercase px-1 pb-1.5 mb-1"
+              style={{ color:'#4488aa', borderBottom:'1px solid #0d2035' }}>
               Навчальний сценарій — вибір ритму
             </div>
-            <div className="grid grid-cols-2 gap-1">
-              {RHYTHM_OPTIONS.map(opt => (
-                <button key={opt.value} onClick={() => handleRhythmChange(opt.value)}
-                  className={`text-left px-2.5 py-2 rounded text-[11px] font-medium transition-colors
-                    ${rhythm===opt.value ? 'bg-gray-700 ring-1 ring-gray-500' : 'hover:bg-gray-800'}
-                    ${opt.color}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            {RHYTHM_OPTIONS.map(opt => (
+              <button key={opt.value} onClick={() => handleRhythmChange(opt.value)}
+                className={`text-left px-2.5 py-2 rounded text-[11px] font-medium transition-colors ${opt.color}`}
+                style={{ background: rhythm===opt.value ? '#0d2035' : 'transparent' }}>
+                {opt.label}
+              </button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main grid */}
-      <div className="flex-1 p-3 grid grid-cols-12 gap-3 overflow-hidden min-h-0">
+      {/* === MAIN MONITOR AREA === */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* Waveforms col */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-2 overflow-y-auto min-h-0">
+        {/* Waveforms — left 75% */}
+        <div className="flex-1 flex flex-col gap-0.5 p-1.5 min-w-0 overflow-hidden">
 
-          {/* ЕКГ — зелена */}
-          <WaveformCanvas
-            buffer={ecgBuffer}
+          {/* Rhythm label bar */}
+          <div className="shrink-0 px-2 py-0.5 flex items-center gap-3"
+            style={{ background:'#000f1e' }}>
+            <span className="text-[9px] font-bold uppercase tracking-widest"
+              style={{ color: rhythmColor, textShadow:`0 0 8px ${rhythmColor}80` }}>
+              {RHYTHM_LABELS[rhythm]}
+            </span>
+            {isCritical && (
+              <span className="text-[9px] font-bold animate-pulse" style={{ color:'#ff4444' }}>
+                ⚠ ТРИВОГА
+              </span>
+            )}
+            <span className="ml-auto text-[9px]" style={{ color:'#224455' }}>
+              {patient.preExistingConditions.join(' · ')}
+            </span>
+          </div>
+
+          {/* ECG — tallest wave */}
+          <WaveformCanvas buffer={ecgBuffer}
+            color={rhythm==='vfib'?'#ff3333':rhythm==='asystole'?'#446655':ECG_COLOR}
+            label="I ECG"
+            height={130} critical={isCritical} showGrid />
+
+          {/* ABP */}
+          <WaveformCanvas buffer={abpBuffer}
+            color={ABP_COLOR} fillColor="rgba(255,60,60,0.06)"
+            label="ABP"
+            currentValue={isNoOutput?'---':currentBP}
+            unit="mmHg" height={105} critical={isNoOutput} showGrid />
+
+          {/* SpO2 pleth */}
+          <WaveformCanvas buffer={spo2Buffer}
+            color={SPO2_COLOR} fillColor="rgba(0,170,255,0.06)"
+            label="SpO₂"
+            currentValue={isNoOutput?'--':String(currentVitals.spo2)}
+            unit="%" height={90} critical={currentVitals.spo2<90} showGrid />
+
+        </div>
+
+        {/* === RIGHT PANEL — Philips numeric display === */}
+        <div className="w-52 shrink-0 flex flex-col border-l"
+          style={{ borderColor:'#0d2035', background:'#000f1e' }}>
+
+          {/* HR */}
+          <PhilipsParamBlock
+            label="HR"
+            subLabel={RHYTHM_LABELS[rhythm].substring(0,12)}
+            value={hrDisplay}
+            unit="bpm"
             color={ECG_COLOR}
-            label="ЕКГ II ВІДВЕДЕННЯ"
-            height={125}
             critical={isCritical}
+            blink={isNoOutput}
+            alarmHigh={currentVitals.heartRate > patient.thresholds.hrMax}
+            alarmLow={currentVitals.heartRate < patient.thresholds.hrMin}
           />
 
-          {/* АТ — червона (як в атласі) */}
-          <WaveformCanvas
-            buffer={abpBuffer}
-            color={ABP_COLOR}
-            fillColor="rgba(239,68,68,0.07)"
-            label="АРТЕРІАЛЬНИЙ ТИСК (АТ)"
-            currentValue={isNoOutput ? '---' : currentBP}
+          {/* ABP */}
+          <PhilipsParamBlock
+            label="ABP"
+            value={isNoOutput?'---':currentBP}
             unit="mmHg"
-            height={110}
+            color={ABP_COLOR}
             critical={isNoOutput}
           />
 
-          {/* SpO2 — синя */}
-          <WaveformCanvas
-            buffer={spo2Buffer}
-            color={SPO2_COLOR}
-            fillColor="rgba(59,130,246,0.07)"
-            label="SpO₂ ПЛЕТИЗМОГРАМА"
-            currentValue={isNoOutput ? '--' : String(currentVitals.spo2)}
+          {/* SpO2 */}
+          <PhilipsParamBlock
+            label="SpO₂"
+            value={isNoOutput?'--':String(currentVitals.spo2)}
             unit="%"
-            height={95}
+            color={SPO2_COLOR}
             critical={currentVitals.spo2 < 90}
+            alarmLow={currentVitals.spo2 < patient.thresholds.spo2Min}
           />
 
-          {/* Vital cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
-            <VitalCard label="ЧСС" value={hrDisplay} unit="bpm"
-              color={rhythm==='vfib'?'#ef4444':rhythm==='asystole'?'#6b7280':ECG_COLOR}
-              critical={isCritical} blink={isNoOutput} />
-            <VitalCard label="АТ" value={isNoOutput?'---':currentBP} unit="mmHg"
-              color={isNoOutput?'#6b7280':ABP_COLOR} critical={isNoOutput} />
-            <VitalCard label="SpO₂" value={isNoOutput?'--':String(currentVitals.spo2)} unit="%"
-              color={currentVitals.spo2<90?'#ef4444':SPO2_COLOR}
-              critical={currentVitals.spo2<90} />
-            <VitalCard label="Темп." value={String(currentVitals.temperature)} unit="°C"
-              color={currentVitals.temperature>37.5?'#f59e0b':'#e5e7eb'} />
-          </div>
-        </div>
+          {/* RR */}
+          <PhilipsParamBlock
+            label="RR"
+            value={String(currentVitals.respiratoryRate)}
+            unit="/хв"
+            color={RR_COLOR}
+          />
 
-        {/* Right sidebar */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-3 overflow-y-auto min-h-0">
+          {/* Temp */}
+          <PhilipsParamBlock
+            label="TEMP"
+            value={String(currentVitals.temperature)}
+            unit="°C"
+            color={currentVitals.temperature > patient.thresholds.tempMax ? '#ff9944' : '#cccccc'}
+            alarmHigh={currentVitals.temperature > patient.thresholds.tempMax}
+          />
 
-          {/* Rhythm info */}
-          <div className={`rounded border p-3 ${isCritical?'bg-red-950/20 border-red-800/40':'bg-[#11141D] border-gray-800'}`}>
-            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Діагноз ритму</div>
-            <div className="font-bold text-sm leading-snug" style={{ color: rhythmColor }}>{RHYTHM_LABELS[rhythm]}</div>
-            <RhythmHint rhythm={rhythm} />
-          </div>
-
-          {/* Meds */}
-          <div className="bg-[#11141D] rounded border border-gray-800">
-            <div className="p-2 border-b border-gray-800 bg-[#151923] text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+          {/* Meds / info block */}
+          <div className="flex-1 p-2 border-t" style={{ borderColor:'#0d2035' }}>
+            <div className="text-[8px] font-bold uppercase mb-1.5"
+              style={{ color:'#224455', letterSpacing:'0.1em' }}>
               Інфузії
             </div>
-            <div className="p-3 space-y-2 text-[11px]">
-              <FlowRow label="Норадреналін" value="0.05 мкг/кг/хв" />
-              <FlowRow label="Фентаніл"     value="50 мкг/год" />
-              <FlowRow label="Інсулін"      value="2.5 Од/год" />
-              <div className="pt-2 border-t border-gray-800">
-                <FlowRow label="Діурез" value="45 мл/год" subValue="(остання год.)" />
-              </div>
+            <InfoRow label="Норадр." value="0.05 мкг/кг/хв" />
+            <InfoRow label="Фентаніл" value="50 мкг/год" />
+            <InfoRow label="Інсулін" value="2.5 Од/год" />
+            <div className="mt-2 pt-2 border-t" style={{ borderColor:'#0d2035' }}>
+              <InfoRow label="Діурез" value="45 мл/год"
+                warn={45 < 30} />
             </div>
-          </div>
-
-          {/* O2 */}
-          <div className="bg-[#11141D] rounded border border-gray-800">
-            <div className="p-2 border-b border-gray-800 bg-[#151923] text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-              Кисень / Вентиляція
-            </div>
-            <div className="p-3 space-y-1.5 text-[11px]">
-              <FlowRow label="FiO₂"  value="40%" />
-              <FlowRow label="Режим" value="HFNC" />
-              <FlowRow label="ЧД"    value={`${currentVitals.respiratoryRate} /хв`} />
+            <div className="mt-2 pt-2 border-t" style={{ borderColor:'#0d2035' }}>
+              <button onClick={onEdit}
+                className="w-full py-1 rounded text-[9px] font-bold uppercase tracking-widest"
+                style={{ background:'#001828', color:'#4488aa', border:'1px solid #0d2035' }}>
+                Пороги
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* === BOTTOM ALARM BAR === */}
+      <div className="shrink-0 px-3 py-1 flex items-center gap-4 border-t text-[9px]"
+        style={{ borderColor:'#0d2035', background:'#000810' }}>
+        {isCritical && (
+          <span className="font-bold animate-pulse flex items-center gap-1" style={{ color:'#ff4444' }}>
+            ⚠ {RHYTHM_LABELS[rhythm].toUpperCase()}
+          </span>
+        )}
+        {currentVitals.spo2 < patient.thresholds.spo2Min && (
+          <span className="font-bold animate-pulse" style={{ color:'#ff6644' }}>
+            SpO₂ низьке: {currentVitals.spo2}%
+          </span>
+        )}
+        {currentVitals.heartRate > patient.thresholds.hrMax && (
+          <span className="font-bold" style={{ color:'#ffaa00' }}>
+            Тахікардія: {currentVitals.heartRate} уд/хв
+          </span>
+        )}
+        <span className="ml-auto" style={{ color:'#1a3a4a' }}>
+          V-ICU · Кардіореанімація
+        </span>
+      </div>
+
+      {/* Scenarios */}
       <AnimatePresence>
         {showResuscitation && (
-          <ResuscitationPanel rhythm={rhythm} onRhythmChange={handleRhythmChange}
+          <ResuscitationPanel key={`resusc-${scenarioKey}`} rhythm={rhythm}
+            onRhythmChange={handleRhythmChange}
             onClose={() => setShowResuscitation(false)} patientName={patient.name} />
         )}
         {showTamponade && (
-          <TamponadeScenario
-            patientName={patient.name}
-            surgeryType={patient.surgeryType}
-            onClose={() => setShowTamponade(false)}
-          />
+          <TamponadeScenario key={`tamp-${scenarioKey}`}
+            patientName={patient.name} surgeryType={patient.surgeryType}
+            onClose={() => setShowTamponade(false)} />
         )}
         {showHypotension && (
-          <HypotensionScenario
-            patientName={patient.name}
-            surgeryType={patient.surgeryType}
-            onClose={() => setShowHypotension(false)}
-          />
+          <HypotensionScenario key={`hypo-${scenarioKey}`}
+            patientName={patient.name} surgeryType={patient.surgeryType}
+            onClose={() => setShowHypotension(false)} />
         )}
       </AnimatePresence>
     </div>
   );
 };
 
-// ---- Підказка по ритму ----
-const RhythmHint = ({ rhythm }: { rhythm: RhythmType }) => {
-  const hints: Partial<Record<RhythmType, { text: string; color: string }>> = {
-    vfib:               { text: '⚡ Дефібриляція показана негайно',         color: 'text-red-400' },
-    asystole:           { text: '⚠️ СЛР + Адреналін 1 мг в/в',             color: 'text-gray-400' },
-    vtach:              { text: '⚡ Кардіоверсія або Аміодарон 300 мг',     color: 'text-red-400' },
-    av_block_3:         { text: '⚠️ Тимчасова кардіостимуляція',            color: 'text-orange-400' },
-    av_block_2_mobitz2: { text: '⚠️ Ризик повної блокади — моніторинг',     color: 'text-orange-400' },
-    av_block_2_mobitz1: { text: 'ℹ️ Венкебах — зазвичай оборотній',        color: 'text-yellow-400' },
-    afib:               { text: 'ℹ️ Контроль ЧШС, антикоагуляція',         color: 'text-yellow-400' },
-  };
-  const hint = hints[rhythm];
-  if (!hint) return null;
-  return (
-    <p className={`text-[10px] mt-1.5 font-medium ${hint.color}`}>{hint.text}</p>
-  );
-};
-
-// ---- Sub-components ----
-const VitalCard = ({ label, value, unit, color, critical=false, blink=false }: any) => (
-  <div className={`p-2.5 rounded border bg-[#11141D] ${critical?'border-red-500/40 bg-red-950/15':'border-gray-800'}`}>
-    <div className="text-[9px] font-bold uppercase text-gray-500 mb-1">{label}</div>
-    <div className="flex items-baseline justify-between">
-      <span className={`text-2xl font-mono font-bold ${blink?'animate-pulse':''}`} style={{ color }}>{value}</span>
-      <span className="text-[9px] text-gray-600 uppercase">{unit}</span>
+// Philips-style numeric parameter block
+const PhilipsParamBlock = ({
+  label, subLabel, value, unit, color, critical=false, blink=false,
+  alarmHigh=false, alarmLow=false,
+}: any) => (
+  <div className="px-2 py-2 border-b relative"
+    style={{ borderColor:'#0d2035', background: critical ? '#1a0000' : 'transparent' }}>
+    {/* Alarm indicator */}
+    {(alarmHigh || alarmLow) && (
+      <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse"
+        style={{ background: alarmHigh ? '#ffaa00' : '#ff4444' }} />
+    )}
+    <div className="flex items-baseline justify-between mb-0.5">
+      <span className="text-[9px] font-bold uppercase tracking-widest opacity-70" style={{ color }}>
+        {label}
+      </span>
+      {subLabel && (
+        <span className="text-[8px] opacity-40 truncate max-w-[80px]" style={{ color }}>
+          {subLabel}
+        </span>
+      )}
+    </div>
+    <div className="flex items-baseline gap-1">
+      <span
+        className={`font-mono font-bold leading-none ${blink?'animate-pulse':''}`}
+        style={{ color, fontSize:'2rem', textShadow:`0 0 16px ${color}60` }}>
+        {value}
+      </span>
+      <span className="text-[10px] opacity-50" style={{ color }}>{unit}</span>
     </div>
   </div>
 );
 
-const FlowRow = ({ label, value, subValue }: any) => (
-  <div className="flex justify-between items-center">
-    <span className="text-gray-500">{label}:</span>
-    <div className="text-right">
-      <span className="font-mono text-white">{value}</span>
-      {subValue && <span className="block text-[8px] text-gray-600">{subValue}</span>}
-    </div>
+const InfoRow = ({ label, value, warn=false }: any) => (
+  <div className="flex justify-between items-center py-0.5">
+    <span style={{ color:'#224455', fontSize:9 }}>{label}:</span>
+    <span className="font-mono text-[10px]" style={{ color: warn ? '#ff6644' : '#aaccee' }}>{value}</span>
   </div>
 );

@@ -46,7 +46,7 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     type: 'hypovolemic',
     label: 'Гіповолемічна гіпотензія',
     labelShort: 'Гіповолемія',
-    mechanism: 'Дефіцит об\'\u0454му циркулюючої крові',
+    mechanism: 'Дефіцит об\'єму циркулюючої крові',
     color: '#f59e0b',
     initialSystolic: 82, initialHR: 118, initialUO: 12,
     cvp: 3, skinTemp: 'cold', lactate: 3.2,
