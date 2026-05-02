@@ -102,7 +102,8 @@ export default function App() {
 
   return (
     <ICULayout 
-      alertCount={alerts.length} 
+      alertCount={alerts.length}
+      bedCount={patients.length}
       onShowAlerts={() => setShowAlertPanel(true)}
     >
       <div className="flex h-full w-full overflow-hidden">

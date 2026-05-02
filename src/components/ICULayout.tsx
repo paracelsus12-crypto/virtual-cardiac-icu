@@ -6,10 +6,11 @@ import { motion } from 'motion/react';
 interface ICULayoutProps {
   children: React.ReactNode;
   alertCount: number;
+  bedCount: number;
   onShowAlerts: () => void;
 }
 
-export const ICULayout: React.FC<ICULayoutProps> = ({ children, alertCount, onShowAlerts }) => {
+export const ICULayout: React.FC<ICULayoutProps> = ({ children, alertCount, bedCount, onShowAlerts }) => {
   return (
     <div className="flex h-screen w-full bg-[#0B0E14] text-gray-300 overflow-hidden font-sans flex-col">
       {/* Header Navigation */}

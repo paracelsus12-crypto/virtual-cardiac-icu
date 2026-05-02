@@ -69,6 +69,13 @@ export const generateVitalUpdate = (patient: Patient): Vitals => {
   const spo2Change = (Math.random() - 0.5) * 0.4;
   const tempChange = (Math.random() - 0.5) * 0.05;
   
+  // Parse current BP
+  const [sysCurr, diaCurr] = currentVitals.bloodPressure.split('/').map(Number);
+  const sysChange = (Math.random() - 0.5) * 4;
+  const diaChange = (Math.random() - 0.5) * 2;
+  const newSys = Math.max(70, Math.min(200, sysCurr + sysChange));
+  const newDia = Math.max(40, Math.min(120, diaCurr + diaChange));
+
   const newHr = Math.max(40, Math.min(220, currentVitals.heartRate + hrChange));
   const newSpo2 = Math.max(80, Math.min(100, currentVitals.spo2 + spo2Change));
   const newTemp = Math.max(34, Math.min(42, currentVitals.temperature + tempChange));
@@ -76,6 +83,7 @@ export const generateVitalUpdate = (patient: Patient): Vitals => {
   return {
     ...currentVitals,
     heartRate: Math.round(newHr),
+    bloodPressure: `${Math.round(newSys)}/${Math.round(newDia)}`,
     spo2: Number(newSpo2.toFixed(1)),
     temperature: Number(newTemp.toFixed(1)),
     timestamp: new Date().toISOString(),
