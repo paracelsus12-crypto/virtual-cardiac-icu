@@ -13,6 +13,7 @@ import { startAlarm, stopAlarm, playBeep, resumeAudioContext } from '../utils/au
 interface HypotensionScenarioProps {
   patientName: string;
   surgeryType: string;
+  speed?: number;
   onClose: () => void;
 }
 
@@ -35,11 +36,12 @@ const pickShockType = (surgeryType: string): ShockType => {
 };
 
 const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
-  patientName, surgeryType, onClose,
+  patientName, surgeryType, speed = 1.0, onClose,
 }) => {
   const [shockType] = useState<ShockType>(() => pickShockType(surgeryType));
   const profile = SHOCK_PROFILES[shockType];
 
+  const [isStarted, setIsStarted]           = useState(false);
   const [timeMin, setTimeMin]               = useState(0);
   const [currentSystolic, setCurrentSystolic] = useState(profile.initialSystolic);
   const [currentHR, setCurrentHR]           = useState(profile.initialHR);
@@ -64,7 +66,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
 
   // Прогресія без лікування
   useEffect(() => {
-    if (isCured || isArrested) return;
+    if (!isStarted || isCured || isArrested) return;
     const id = window.setInterval(() => {
       setTimeMin(t => +(t + 0.1).toFixed(2));
       setCurrentSystolic(s => {
@@ -272,9 +274,20 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 font-mono text-sm">
-            <Clock size={13} className="text-gray-500" />
-            <span className={timeMin > 10 ? 'text-red-400 font-bold' : 'text-white'}>{fmt(timeMin)}</span>
+          <div className="flex items-center gap-2">
+            {!isStarted ? (
+              <button onClick={() => setIsStarted(true)}
+                className="px-4 py-1 rounded font-bold text-xs animate-pulse"
+                style={{ background:'#005500', color:'#44ff88', border:'1px solid #008800' }}>
+                ▶ СТАРТ
+              </button>
+            ) : (
+              <div className="flex items-center gap-1 font-mono text-sm">
+                <Clock size={13} className="text-gray-500" />
+                <span className={timeMin > 10 ? 'text-red-400 font-bold' : 'text-white'}>{fmt(timeMin)}</span>
+                <span className="text-[9px] ml-1 opacity-50">{speed !== 1 ? `${speed}×` : ''}</span>
+              </div>
+            )}
           </div>
           <button onClick={onClose} className="p-1 hover:bg-white/5 rounded text-gray-500"><X size={16}/></button>
         </div>

@@ -15,6 +15,7 @@ import {
   playNormalBeep, playAfibBeep, startAlarm, stopAlarm,
   setMuted, getMuted, resumeAudioContext,
 } from '../utils/audioEngine';
+import { PATIENT_MEDS } from '../services/icuService';
 
 interface PatientMonitorProps {
   patient: Patient;
@@ -356,19 +357,61 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
             alarmHigh={currentVitals.temperature > patient.thresholds.tempMax}
           />
 
-          {/* Meds / info block */}
-          <div className="flex-1 p-2 border-t" style={{ borderColor:'#0d2035' }}>
-            <div className="text-[8px] font-bold uppercase mb-1.5"
-              style={{ color:'#224455', letterSpacing:'0.1em' }}>
-              Інфузії
-            </div>
-            <InfoRow label="Норадр." value="0.05 мкг/кг/хв" />
-            <InfoRow label="Фентаніл" value="50 мкг/год" />
-            <InfoRow label="Інсулін" value="2.5 Од/год" />
-            <div className="mt-2 pt-2 border-t" style={{ borderColor:'#0d2035' }}>
-              <InfoRow label="Діурез" value="45 мл/год"
-                warn={45 < 30} />
-            </div>
+          {/* Meds / info block — індивідуальні */}
+          <div className="flex-1 p-2 border-t overflow-y-auto" style={{ borderColor:'#0d2035' }}>
+            {(() => {
+              const meds = PATIENT_MEDS[patient.id];
+              if (!meds) return null;
+              return (
+                <>
+                  {/* Дихання */}
+                  <div className="mb-2">
+                    <div className="text-[8px] font-bold uppercase mb-1" style={{ color:'#224455', letterSpacing:'0.1em' }}>
+                      Дихання
+                    </div>
+                    <div className="text-[10px]" style={{ color: meds.ventilation.includes('ШВЛ') ? '#ffaa44' : '#22cc66' }}>
+                      {meds.ventilation}
+                    </div>
+                    <div className="text-[9px]" style={{ color:'#4488aa' }}>
+                      {meds.mode} · FiO₂ {meds.fio2}
+                    </div>
+                  </div>
+                  {/* Знеболення */}
+                  {meds.analgesia.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[8px] font-bold uppercase mb-1" style={{ color:'#224455', letterSpacing:'0.1em' }}>
+                        Знеболення
+                      </div>
+                      {meds.analgesia.map((m, i) => (
+                        <div key={i} className="text-[9px]" style={{ color:'#aaccee' }}>{m}</div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Вазоактивні */}
+                  {meds.vasoactive.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[8px] font-bold uppercase mb-1" style={{ color:'#224455', letterSpacing:'0.1em' }}>
+                        Вазоактивні
+                      </div>
+                      {meds.vasoactive.map((m, i) => (
+                        <div key={i} className="text-[9px] font-bold" style={{ color:'#ff8844' }}>{m}</div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Інше */}
+                  {meds.other.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[8px] font-bold uppercase mb-1" style={{ color:'#224455', letterSpacing:'0.1em' }}>
+                        Інше
+                      </div>
+                      {meds.other.map((m, i) => (
+                        <div key={i} className="text-[9px]" style={{ color:'#667788' }}>{m}</div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <div className="mt-2 pt-2 border-t" style={{ borderColor:'#0d2035' }}>
               <button onClick={onEdit}
                 className="w-full py-1 rounded text-[9px] font-bold uppercase tracking-widest"
@@ -413,11 +456,13 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, onEdit 
         {showTamponade && (
           <TamponadeScenario key={`tamp-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
+            speed={speed}
             onClose={() => setShowTamponade(false)} />
         )}
         {showHypotension && (
           <HypotensionScenario key={`hypo-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
+            speed={speed}
             onClose={() => setShowHypotension(false)} />
         )}
       </AnimatePresence>

@@ -6,7 +6,7 @@ import { PatientMonitor } from './components/PatientMonitor';
 import { AlertPanel } from './components/AlertPanel';
 import { PatientModal } from './components/PatientModal';
 import { Patient, ICUAlert, PatientStatus } from './types';
-import { getInitialPatients, generateVitalUpdate, checkAlerts } from './services/icuService';
+import { getInitialPatients, generateVitalUpdate, checkAlerts, computeStatus } from './services/icuService';
 import { AnimatePresence } from 'motion/react';
 import { UserPlus } from 'lucide-react';
 
@@ -48,13 +48,7 @@ export default function App() {
 
           const newHistory = [...patient.history, newVitals].slice(-50);
           
-          // Determine status based on active alerts
-          let status = PatientStatus.STABLE;
-          if (newAlerts.some(a => a.severity === PatientStatus.CRITICAL)) {
-            status = PatientStatus.CRITICAL;
-          } else if (newAlerts.some(a => a.severity === PatientStatus.WARNING)) {
-            status = PatientStatus.WARNING;
-          }
+          const status = computeStatus({ ...patient, currentVitals: newVitals });
 
           return {
             ...patient,
