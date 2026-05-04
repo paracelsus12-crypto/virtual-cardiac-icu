@@ -7,10 +7,11 @@ import { AlertPanel } from './components/AlertPanel';
 import { PatientModal } from './components/PatientModal';
 import { Patient, ICUAlert, PatientStatus } from './types';
 import { getInitialPatients, generateVitalUpdate, checkAlerts, computeStatus } from './services/icuService';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { UserPlus } from 'lucide-react';
 
 export default function App() {
+  const [agreed, setAgreed] = useState(() => sessionStorage.getItem('icu_agreed') === '1');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [alerts, setAlerts] = useState<ICUAlert[]>([]);
@@ -93,6 +94,67 @@ export default function App() {
     setShowPatientModal(false);
     setEditingPatient(undefined);
   };
+
+
+  // ---- Disclaimer screen ----
+  if (!agreed) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ background: '#000810' }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg rounded-xl shadow-2xl overflow-hidden"
+          style={{ background: '#000f1e', border: '1px solid #0d2035' }}
+        >
+          {/* Header */}
+          <div className="px-6 py-4 border-b flex items-center gap-3"
+            style={{ borderColor: '#0d2035', background: '#00060f' }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: '#551100', border: '1px solid #882200' }}>
+              <span className="text-red-400 font-bold text-sm">!</span>
+            </div>
+            <div>
+              <h1 className="font-bold text-white text-sm uppercase tracking-widest">
+                Тільки для освітніх цілей
+              </h1>
+              <p className="text-[10px]" style={{ color: '#446688' }}>
+                V-ICU · Virtual Cardiac ICU Simulator
+              </p>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-4 text-sm leading-relaxed" style={{ color: '#aaccdd' }}>
+            <p>
+              Дана програма є <strong className="text-white">симулятором для навчання</strong>.
+              Дані, отримані за допомогою програми, <strong className="text-red-400">не можуть бути підставою
+              для встановлення діагнозу або призначення лікування реальним пацієнтам</strong>.
+            </p>
+            <p>
+              Використання будь-якої інформації з цього додатка у реальній медичній практиці
+              здійснюється на власний розсуд та під особисту відповідальність лікаря.
+            </p>
+            <p style={{ color: '#446688' }} className="text-xs">
+              Автор не несе відповідальності за клінічні наслідки використання матеріалів симулятора
+              поза навчальним контекстом.
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor: '#0d2035', background: '#00060f' }}>
+            <button
+              onClick={() => { sessionStorage.setItem('icu_agreed', '1'); setAgreed(true); }}
+              className="flex-1 py-2.5 rounded-lg font-bold text-sm transition-all"
+              style={{ background: '#004422', color: '#44ff88', border: '1px solid #006633' }}
+            >
+              Зрозуміло, продовжити
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <ICULayout 
