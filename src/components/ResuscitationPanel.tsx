@@ -1,14 +1,17 @@
 // ResuscitationPanel — інтерактивна панель реанімації при ФШ/ШТ
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Heart, Activity, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Zap, Heart, Activity, AlertTriangle, CheckCircle, Clock, X } from 'lucide-react';
 import { playDefibrillatorShock, playCPRBeep } from '../utils/audioEngine';
+import { Lang } from '../utils/i18n';
 import { RhythmType } from '../utils/ecgGenerator';
 
 interface ResuscitationAction {
   id: string;
   label: string;
+  labelEn: string;
   description: string;
+  descEn: string;
   icon: React.ReactNode;
   color: string;
   key: string;
@@ -27,13 +30,14 @@ interface ResuscitationPanelProps {
   onRhythmChange: (rhythm: RhythmType) => void;
   onClose: () => void;
   patientName: string;
+  lang?: Lang;
 }
 
 const ACTIONS: ResuscitationAction[] = [
   {
     id: 'defib',
-    label: 'Дефібриляція 200 Дж',
-    description: 'Несинхронізований розряд',
+    label: 'Дефібриляція 200 Дж', labelEn: 'Defibrillation 200 J',
+    description: 'Несинхронізований розряд', descEn: 'Unsynchronized shock',
     icon: <Zap size={20} />,
     color: 'bg-yellow-500 hover:bg-yellow-400 border-yellow-400',
     key: 'D',
@@ -41,8 +45,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'cpr',
-    label: 'СЛР (2 хв)',
-    description: '30:2, частота 100-120/хв',
+    label: 'СЛР (2 хв)', labelEn: 'CPR (2 min)',
+    description: '30:2, частота 100-120/хв', descEn: '30:2, rate 100-120/min',
     icon: <Heart size={20} />,
     color: 'bg-red-600 hover:bg-red-500 border-red-500',
     key: 'C',
@@ -50,8 +54,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'epinephrine',
-    label: 'Адреналін 1 мг в/в',
-    description: 'Кожні 3-5 хв',
+    label: 'Адреналін 1 мг в/в', labelEn: 'Epinephrine 1 mg IV',
+    description: 'Кожні 3-5 хв', descEn: 'Every 3-5 min',
     icon: <Activity size={20} />,
     color: 'bg-blue-600 hover:bg-blue-500 border-blue-500',
     key: 'A',
@@ -59,8 +63,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'amiodarone',
-    label: 'Аміодарон 300 мг',
-    description: 'Після 3-го розряду',
+    label: 'Аміодарон 300 мг', labelEn: 'Amiodarone 300 mg',
+    description: 'Після 3-го розряду', descEn: 'After 3rd shock',
     icon: <Activity size={20} />,
     color: 'bg-purple-600 hover:bg-purple-500 border-purple-500',
     key: 'M',
@@ -68,8 +72,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'atropine',
-    label: 'Атропін 1 мг в/в',
-    description: 'При брадикардії / АВ-блокаді I-II ст.',
+    label: 'Атропін 1 мг в/в', labelEn: 'Atropine 1 mg IV',
+    description: 'При брадикардії / АВ-блокаді I-II ст.', descEn: 'For bradycardia / AV Block I-II°',
     icon: <Activity size={20} />,
     color: 'bg-teal-600 hover:bg-teal-500 border-teal-500',
     key: 'T',
@@ -77,8 +81,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'pacing_transcutaneous',
-    label: 'Черезшкірна стимуляція',
-    description: 'Частота 60/хв, струм 50-100 мА — при АВ-бл. II-III',
+    label: 'Черезшкірна стимуляція', labelEn: 'Transcutaneous Pacing',
+    description: 'Частота 60/хв, струм 50-100 мА — при АВ-бл. II-III', descEn: 'Rate 60/min, current 50-100 mA — AV Block II-III°',
     icon: <Zap size={20} />,
     color: 'bg-cyan-600 hover:bg-cyan-500 border-cyan-500',
     key: 'P',
@@ -86,8 +90,8 @@ const ACTIONS: ResuscitationAction[] = [
   },
   {
     id: 'pacing_transvenous',
-    label: 'Трансвенозна стимуляція',
-    description: 'Метод вибору при АВ-бл. III ст. — виклик кардіолога',
+    label: 'Трансвенозна стимуляція', labelEn: 'Transvenous Pacing',
+    description: 'Метод вибору при АВ-бл. III ст. — виклик кардіолога', descEn: 'Method of choice for AV Block III° — call cardiologist',
     icon: <Zap size={20} />,
     color: 'bg-indigo-500 hover:bg-indigo-400 border-indigo-400',
     key: 'V',
@@ -326,6 +330,7 @@ const ResuscitationPanel: React.FC<ResuscitationPanelProps> = ({
   onRhythmChange,
   onClose,
   patientName,
+  lang = 'ua',
 }) => {
   const [events, setEvents] = useState<ResuscitationEvent[]>([]);
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
@@ -452,9 +457,9 @@ const ResuscitationPanel: React.FC<ResuscitationPanelProps> = ({
             }
             <div>
               <h2 className="font-bold text-white text-sm uppercase tracking-wider">
-                {isSuccess ? 'РИТМ ВІДНОВЛЕНО' :
-                  isAvBlock ? 'АВ-БЛОКАДА — ПОРУШЕННЯ ПРОВІДНОСТІ' :
-                  'ЗУПИНКА СЕРЦЯ — РЕАНІМАЦІЯ'}
+                {isSuccess ? (lang === 'ua' ? 'РИТМ ВІДНОВЛЕНО' : 'RHYTHM RESTORED') :
+                  isAvBlock ? (lang === 'ua' ? 'АВ-БЛОКАДА — ПОРУШЕННЯ ПРОВІДНОСТІ' : 'AV BLOCK — CONDUCTION DISORDER') :
+                  (lang === 'ua' ? 'ЗУПИНКА СЕРЦЯ — РЕАНІМАЦІЯ' : 'CARDIAC ARREST — RESUSCITATION')}
               </h2>
               <p className="text-[11px] text-gray-400">{patientName}</p>
             </div>
@@ -464,6 +469,9 @@ const ResuscitationPanel: React.FC<ResuscitationPanelProps> = ({
               <Clock size={14} className="text-gray-500" />
               <span className={timeElapsed > 120 ? 'text-red-400' : 'text-white'}>{formatTime(timeElapsed)}</span>
             </div>
+            <button onClick={onClose} className="p-1 hover:bg-white/10 rounded text-gray-500 hover:text-white">
+              <X size={16}/>
+            </button>
             {isSuccess && (
               <button
                 onClick={onClose}
@@ -518,12 +526,12 @@ const ResuscitationPanel: React.FC<ResuscitationPanelProps> = ({
                   >
                     <div className="flex items-center gap-2 mb-1">
                       {action.icon}
-                      <span className="font-bold text-sm">{action.label}</span>
+                      <span className="font-bold text-sm">{lang === 'ua' ? action.label : action.labelEn}</span>
                       <span className="ml-auto text-[10px] font-mono border border-white/20 px-1 rounded">
                         [{action.key}]
                       </span>
                     </div>
-                    <p className="text-[10px] opacity-70">{action.description}</p>
+                    <p className="text-[10px] opacity-70">{lang === 'ua' ? action.description : action.descEn}</p>
                     {isDisabled && (
                       <div className="absolute bottom-1 right-2 text-[10px] font-mono opacity-70">
                         {cd}s

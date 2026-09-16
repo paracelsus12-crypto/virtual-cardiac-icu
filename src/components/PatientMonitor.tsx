@@ -470,7 +470,7 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
         {showResuscitation && (
           <ResuscitationPanel key={`resusc-${scenarioKey}`} rhythm={rhythm}
             onRhythmChange={handleRhythmChange}
-            onClose={() => setShowResuscitation(false)} patientName={patient.name} />
+            onClose={() => setShowResuscitation(false)} patientName={patient.name} lang={lang} />
         )}
         {showTamponade && (
           <TamponadeScenario key={`tamp-${scenarioKey}`}
