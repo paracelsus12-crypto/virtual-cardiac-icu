@@ -143,7 +143,7 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
     setCooldowns(prev => ({ ...prev, [actionId]: action.cooldown }));
 
     const result = evaluateTamponadeAction(
-      actionId, state, category, echoConfirmed, consultantCalled, actionHistory,
+      actionId, state, category, echoConfirmed, consultantCalled, actionHistory, lang as Lang,
     );
 
     setLog(prev => [{
@@ -178,7 +178,7 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
   // ---- ДЕБРИФІНГ ----
   if (showDebrief) {
     const debrief = getDebriefScore(
-      actionHistory, category, echoConfirmed, consultantCalled, isCured, timeMin,
+      actionHistory, category, echoConfirmed, consultantCalled, isCured, timeMin, lang as Lang,
     );
 
     return (

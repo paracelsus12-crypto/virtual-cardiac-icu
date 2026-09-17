@@ -177,7 +177,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
     setCooldowns(prev => ({ ...prev, [actionId]: action.cooldown }));
     setTreatmentHistory(prev => [...prev, actionId]);
 
-    const result = evaluateTreatment(actionId, shockType, diagnosisConfirmed, treatmentHistory);
+    const result = evaluateTreatment(actionId, shockType, diagnosisConfirmed, treatmentHistory, lang as Lang);
 
     if (result.penaltyNote) setPenaltyActions(prev => [...prev, result.penaltyNote!]);
 
@@ -203,7 +203,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
   if (showDebrief) {
     const debrief = getHypotensionDebrief(
       shockType, diagnosisConfirmed, testsPerformed,
-      treatmentHistory, isCured, timeMin, penaltyActions,
+      treatmentHistory, isCured, timeMin, penaltyActions, lang as Lang,
     );
     return (
       <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}

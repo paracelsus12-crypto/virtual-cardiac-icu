@@ -1,3 +1,4 @@
+import { Lang } from './i18n';
 // tamponadeEngine.ts v2 — постопераційна тампонада серця
 // Тактика адаптується під тип втручання
 
@@ -212,7 +213,9 @@ export const evaluateTamponadeAction = (
   echoConfirmed: boolean,
   consultantCalled: boolean,
   actionHistory: string[],
+  lang: Lang = 'ua',
 ): ActionResult => {
+  const ua = lang === 'ua';
   const fluidCount  = actionHistory.filter(a => a === 'fluids').length;
   const pericCount  = actionHistory.filter(a => a === 'pericardiocentesis').length;
   const drainCount  = actionHistory.filter(a => a === 'check_drain').length;
@@ -220,64 +223,64 @@ export const evaluateTamponadeAction = (
   switch (actionId) {
 
     case 'echo': {
-      if (echoConfirmed) return { success: false, message: 'Ехо вже виконано.' };
+      if (echoConfirmed) return { success: false, message: ua ? 'Ехо вже виконано.' : 'Echo already performed.' };
       if (category === 'open') {
         return {
           success: true,
-          message: `⚠️ Ехо: ознаки рідини/згустків у перикарді. Але після відкритої операції ехо може бути хибнонегативним (локальна компресія згустками). Клінічна картина важливіша.`,
-          hint: 'При погіршенні гемодинаміки після відкритої операції — реексплорація без зволікань.',
+          message: ua ? `⚠️ Ехо: ознаки рідини/згустків у перикарді. Але після відкритої операції ехо може бути хибнонегативним (локальна компресія згустками). Клінічна картина важливіша.` : `⚠️ Echo: signs of fluid/clots in pericardium. After open surgery echo may be false-negative (local clot compression). Clinical picture is more important.`,
+          hint: ua ? 'При погіршенні гемодинаміки після відкритої операції — реексплорація без зволікань.' : 'Worsening hemodynamics after open surgery — re-exploration without delay.',
         };
       }
       return {
         success: true,
-        message: `✅ Ехо: ${state.volumeMl} мл рідини в перикарді. Колапс правого шлуночка. Тампонада підтверджена. Перикардіоцентез показаний.`,
-        hint: 'Виконайте перикардіоцентез під ехо-контролем.',
+        message: ua ? `✅ Ехо: ${state.volumeMl} мл рідини в перикарді. Колапс правого шлуночка. Тампонада підтверджена. Перикардіоцентез показаний.` : `✅ Echo: ${state.volumeMl} ml of fluid in pericardium. Right ventricular collapse. Tamponade confirmed. Pericardiocentesis indicated.`,
+        hint: ua ? 'Виконайте перикардіоцентез під ехо-контролем.' : 'Perform pericardiocentesis under echo guidance.',
       };
     }
 
     case 'consultant': {
-      if (consultantCalled) return { success: false, message: 'Хірург вже викликаний і прямує.' };
+      if (consultantCalled) return { success: false, message: ua ? 'Хірург вже викликаний і прямує.' : 'Surgeon already called and on the way.' };
       if (category === 'open') {
         return {
           success: true,
-          message: '✅ Хірург викликаний. Прогресія сповільнена. Реексплорація тепер доступна. Готуйте операційну.',
+          message: ua ? '✅ Хірург викликаний. Прогресія сповільнена. Реексплорація тепер доступна. Готуйте операційну.' : '✅ Surgeon called. Progression slowed. Re-exploration now available. Prepare the OR.',
         };
       }
       return {
         success: true,
-        message: '✅ Старший колега повідомлений. При невдачі перикардіоцентезу — реексплорація доступна.',
+        message: ua ? '✅ Старший колега повідомлений. При невдачі перикардіоцентезу — реексплорація доступна.' : '✅ Senior colleague notified. If pericardiocentesis fails — re-exploration available.',
       };
     }
 
     case 'fluids': {
       if (fluidCount >= 2) return {
         success: false,
-        message: '⚠️ Повторна інфузія малоефективна при тампонаді. Потрібне втручання для усунення причини.',
+        message: ua ? '⚠️ Повторна інфузія малоефективна при тампонаді. Потрібне втручання для усунення причини.' : '⚠️ Repeat infusion ineffective in tamponade. Intervention needed to address the cause.',
       };
       return {
         success: true,
         message: fluidCount === 0
-          ? '✅ Болюс 500 мл. Тимчасово підвищує переднавантаження. АТ трохи зріс. Це не лікує тампонаду.'
-          : '⚠️ Другий болюс. Мінімальний ефект. Діяти потрібно зараз.',
-        hint: 'Рідина — лише міст до основного втручання.',
+          ? (ua ? '✅ Болюс 500 мл. Тимчасово підвищує переднавантаження. АТ трохи зріс. Це не лікує тампонаду.' : '✅ Bolus 500 ml. Temporarily increases preload. BP slightly improved. This does not treat tamponade.')
+          : (ua ? '⚠️ Другий болюс. Мінімальний ефект. Діяти потрібно зараз.' : '⚠️ Second bolus. Minimal effect. Action needed now.'),
+        hint: ua ? 'Рідина — лише міст до основного втручання.' : 'Fluid is only a bridge to definitive intervention.',
       };
     }
 
     case 'check_drain': {
       if (!state.drainBlocked) return {
         success: false,
-        message: 'Дренаж прохідний, виділення є. Причина погіршення — не блокада дренажу.',
+        message: ua ? 'Дренаж прохідний, виділення є. Причина погіршення — не блокада дренажу.' : 'Drain patent, output present. Deterioration not caused by drain blockage.',
       };
       if (drainCount >= 2) return {
         success: false,
         message: '⚠️ Дренаж не відновлює прохідність — щільні згустки. Реексплорація необхідна.',
-        hint: 'Промивання дренажу при щільних згустках неефективне.',
+        hint: ua ? 'Промивання дренажу при щільних згустках неефективне.' : 'Flushing drain with dense clots is ineffective.',
       };
       return {
         success: true,
         message: drainCount === 0
-          ? '⚠️ Часткова прохідність відновлена, виділилось ~30 мл. Але тиск не нормалізується — згустки в порожнині перикарда.'
-          : '⚠️ Дренаж знову заблокований. Реексплорація — єдиний вихід.',
+          ? (ua ? '⚠️ Часткова прохідність відновлена, виділилось ~30 мл. Але тиск не нормалізується — згустки в порожнині перикарда.' : '⚠️ Partial patency restored, ~30 ml drained. But BP not normalizing — clots in pericardial cavity.')
+          : (ua ? '⚠️ Дренаж знову заблокований. Реексплорація — єдиний вихід.' : '⚠️ Drain blocked again. Re-exploration is the only option.'),
         hint: 'Після відкритої операції дренаж не вирішує проблему згустків у перикарді.',
       };
     }
@@ -288,7 +291,7 @@ export const evaluateTamponadeAction = (
         const extra = Math.round(state.volumeMl * 0.4);
         return {
           success: true,
-          message: `✅ Повторна аспірація: евакуйовано ще ${extra} мл. Гемодинаміка покращується.`,
+          message: ua ? `✅ Повторна аспірація: евакуйовано ще ${extra} мл. Гемодинаміка покращується.` : `✅ Repeat aspiration: ${extra} ml more evacuated. Hemodynamics improving.`,
           volumeReduction: extra,
           progressionStop: true,
         };
@@ -296,7 +299,7 @@ export const evaluateTamponadeAction = (
       const evacuated = Math.round(state.volumeMl * 0.70);
       return {
         success: true,
-        message: `✅ Перикардіоцентез успішний. Евакуйовано ${evacuated} мл. АТ зростає, ЧСС знижується.`,
+        message: ua ? `✅ Перикардіоцентез успішний. Евакуйовано ${evacuated} мл. АТ зростає, ЧСС знижується.` : `✅ Pericardiocentesis successful. ${evacuated} ml evacuated. BP rising, HR decreasing.`,
         volumeReduction: evacuated,
         progressionStop: true,
         cure: state.volumeMl < 200,
@@ -308,21 +311,21 @@ export const evaluateTamponadeAction = (
       const evacuated = Math.round(state.volumeMl * 0.25); // мало ефективний
       return {
         success: true,
-        message: `⚠️ Аспіровано лише ${evacuated} мл — решта згустки. Гемодинаміка суттєво не покращилась. РЕЕКСПЛОРАЦІЯ НЕОБХІДНА.`,
+        message: ua ? `⚠️ Аспіровано лише ${evacuated} мл — решта згустки. Гемодинаміка суттєво не покращилась. РЕЕКСПЛОРАЦІЯ НЕОБХІДНА.` : `⚠️ Only ${evacuated} ml aspirated — rest are clots. Hemodynamics not significantly improved. RE-EXPLORATION REQUIRED.`,
         volumeReduction: evacuated,
         progressionStop: false,
-        hint: 'Перикардіоцентез після відкритої операції — неповноцінний захід. Продовжується кровотеча.',
+        hint: ua ? 'Перикардіоцентез після відкритої операції — неповноцінний захід. Продовжується кровотеча.' : 'Pericardiocentesis after open surgery is inadequate. Bleeding continues.',
       };
     }
 
     case 'reexploration': {
       if (!consultantCalled) return {
         success: false,
-        message: '❌ Реексплорація потребує хірурга. Спочатку викличте старшого колегу.',
+        message: ua ? '❌ Реексплорація потребує хірурга. Спочатку викличте старшого колегу.' : '❌ Re-exploration requires a surgeon. Call senior colleague first.',
       };
       return {
         success: true,
-        message: '✅ Реексплорація виконана. Евакуйовано згустки, джерело кровотечі ліквідовано. Гемостаз досягнутий. Пацієнт стабілізований.',
+        message: ua ? '✅ Реексплорація виконана. Евакуйовано згустки, джерело кровотечі ліквідовано. Гемостаз досягнутий. Пацієнт стабілізований.' : '✅ Re-exploration performed. Clots evacuated, bleeding source eliminated. Hemostasis achieved. Patient stabilized.',
         volumeReduction: state.volumeMl,
         progressionStop: true,
         cure: true,
@@ -332,15 +335,15 @@ export const evaluateTamponadeAction = (
     case 'reexploration_catheter': {
       if (!consultantCalled) return {
         success: false,
-        message: '❌ Потрібен хірург для реексплорації.',
+        message: ua ? '❌ Потрібен хірург для реексплорації.' : '❌ Surgeon required for re-exploration.',
       };
       if (!echoConfirmed) return {
         success: false,
-        message: '❌ Підтвердіть діагноз ехо перед реексплорацією.',
+        message: ua ? '❌ Підтвердіть діагноз ехо перед реексплорацією.' : '❌ Confirm diagnosis with echo before re-exploration.',
       };
       return {
         success: true,
-        message: '✅ Хірургічне втручання виконане. Перфорація ліквідована. Пацієнт стабільний.',
+        message: ua ? '✅ Хірургічне втручання виконане. Перфорація ліквідована. Пацієнт стабільний.' : '✅ Surgical intervention completed. Perforation repaired. Patient stable.',
         cure: true,
         progressionStop: true,
         volumeReduction: state.volumeMl,
@@ -348,7 +351,7 @@ export const evaluateTamponadeAction = (
     }
 
     default:
-      return { success: false, message: 'Невідома дія.' };
+      return { success: false, message: ua ? 'Невідома дія.' : 'Unknown action.' };
   }
 };
 
@@ -362,28 +365,30 @@ export const getDebriefScore = (
   consultantCalled: boolean,
   isCured: boolean,
   timeMin: number,
+  lang: Lang = 'ua',
 ): { score: number; total: number; items: { ok: boolean; text: string }[] } => {
+  const ua = lang === 'ua';
 
   const items =
     category === 'open'
       ? [
-          { ok: actionHistory.includes('echo'),         text: 'Виконано ехо (навіть якщо хибнонегативне — правильний крок)' },
-          { ok: consultantCalled,                        text: 'Хірург викликаний своєчасно' },
-          { ok: actionHistory.includes('check_drain'),  text: 'Перевірено прохідність дренажу' },
-          { ok: actionHistory.includes('fluids'),        text: 'Рідинна ресусцитація як тимчасовий захід' },
-          { ok: actionHistory.includes('reexploration'), text: 'Виконана реексплорація — метод вибору' },
+          { ok: actionHistory.includes('echo'),         text: ua ? 'Виконано ехо (навіть якщо хибнонегативне — правильний крок)' : 'Echo performed (even if false-negative — correct step)' },
+          { ok: consultantCalled,                        text: ua ? 'Хірург викликаний своєчасно' : 'Surgeon called in time' },
+          { ok: actionHistory.includes('check_drain'),  text: ua ? 'Перевірено прохідність дренажу' : 'Drain patency checked' },
+          { ok: actionHistory.includes('fluids'),        text: ua ? 'Рідинна ресусцитація як тимчасовий захід' : 'Fluid resuscitation as temporary measure' },
+          { ok: actionHistory.includes('reexploration'), text: ua ? 'Виконана реексплорація — метод вибору' : 'Re-exploration performed — method of choice' },
           { ok: !actionHistory.includes('pericardiocentesis_open') || consultantCalled,
-            text: 'Не покладався лише на перикардіоцентез при відкритій операції' },
-          { ok: isCured && timeMin < 15,                text: 'Рішення прийнято вчасно (до 15 хв)' },
+            text: ua ? 'Не покладався лише на перикардіоцентез при відкритій операції' : 'Did not rely solely on pericardiocentesis after open surgery' },
+          { ok: isCured && timeMin < 15,                text: ua ? 'Рішення прийнято вчасно (до 15 хв)' : 'Decision made in time (within 15 min)' },
         ]
       : [
-          { ok: actionHistory.includes('echo'),                   text: 'Ехо виконано для підтвердження діагнозу' },
-          { ok: consultantCalled,                                  text: 'Старший колега повідомлений' },
-          { ok: actionHistory.includes('fluids'),                  text: 'Рідинна ресусцитація як тимчасовий захід' },
+          { ok: actionHistory.includes('echo'),                   text: ua ? 'Ехо виконано для підтвердження діагнозу' : 'Echo performed to confirm diagnosis' },
+          { ok: consultantCalled,                                  text: ua ? 'Старший колега повідомлений' : 'Senior colleague notified' },
+          { ok: actionHistory.includes('fluids'),                  text: ua ? 'Рідинна ресусцитація як тимчасовий захід' : 'Fluid resuscitation as temporary measure' },
           { ok: actionHistory.includes('pericardiocentesis'),      text: 'Перикардіоцентез — основний метод лікування' },
           { ok: actionHistory.indexOf('echo') < actionHistory.indexOf('pericardiocentesis'),
-            text: 'Правильна послідовність: Ехо → Перикардіоцентез' },
-          { ok: isCured && timeMin < 15,                          text: 'Рішення прийнято вчасно (до 15 хв)' },
+            text: ua ? 'Правильна послідовність: Ехо → Перикардіоцентез' : 'Correct sequence: Echo → Pericardiocentesis' },
+          { ok: isCured && timeMin < 15,                          text: ua ? 'Рішення прийнято вчасно (до 15 хв)' : 'Decision made in time (within 15 min)' },
         ];
 
   const score = items.filter(i => i.ok).length;

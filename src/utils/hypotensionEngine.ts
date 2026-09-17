@@ -1,3 +1,4 @@
+import { Lang } from './i18n';
 // hypotensionEngine.ts — диференційна діагностика гіпотензії
 // 5 типів шоку для кардіохірургічної реанімації
 
@@ -301,7 +302,9 @@ export const evaluateTreatment = (
   shockType: ShockType,
   diagnosisConfirmed: boolean,
   actionHistory: string[],
+  lang: Lang = 'ua',
 ): TreatmentResult => {
+  const ua = lang === 'ua';
   const action = TREATMENT_ACTIONS.find(a => a.id === actionId)!;
   const prevCount = actionHistory.filter(a => a === actionId).length;
 
@@ -320,8 +323,8 @@ export const evaluateTreatment = (
     return {
       bpChange: prevCount === 0 ? bpBoost : Math.round(bpBoost * 0.4),
       message: prevCount === 0
-        ? `✅ ${action.label}: хороший ефект. АТ підвищився. Це правильне етіотропне лікування.`
-        : `✅ Повторне введення: менший ефект. Продовжуйте.`,
+        ? (ua ? `✅ ${action.label}: хороший ефект. АТ підвищився. Це правильне етіотропне лікування.` : `✅ ${action.labelEn ?? action.label}: good effect. BP improved. This is the correct causal treatment.`)
+        : (ua ? `✅ Повторне введення: менший ефект. Продовжуйте.` : `✅ Repeat dose: diminishing effect. Continue.`),
       isCausal: action.isCausal,
     };
   }
@@ -331,10 +334,10 @@ export const evaluateTreatment = (
                     actionId === 'fluids_500'      ? 8  : 6;
     return {
       bpChange: prevCount === 0 ? bpBoost : Math.round(bpBoost * 0.3),
-      message: `⚠️ ${action.label}: АТ трохи підвищився, але це симптоматичний ефект. Причина не усунена.`,
-      hint: diagnosisConfirmed ? `Для ${SHOCK_PROFILES[shockType].labelShort} потрібне інше лікування.` : 'Уточніть діагноз перед лікуванням.',
+      message: ua ? `⚠️ ${action.label}: АТ трохи підвищився, але це симптоматичний ефект. Причина не усунена.` : `⚠️ ${action.labelEn ?? action.label}: BP slightly improved, but this is a symptomatic effect. Cause not treated.`,
+      hint: diagnosisConfirmed ? (ua ? `Для ${SHOCK_PROFILES[shockType].labelShort} потрібне інше лікування.` : `${SHOCK_PROFILES[shockType].labelShort} requires different treatment.`) : (ua ? 'Уточніть діагноз перед лікуванням.' : 'Clarify diagnosis before treatment.'),
       isCausal: false,
-      penaltyNote: 'Симптоматичне лікування без усунення причини',
+      penaltyNote: ua ? 'Симптоматичне лікування без усунення причини' : 'Symptomatic treatment without addressing cause',
     };
   }
 
@@ -344,16 +347,16 @@ export const evaluateTreatment = (
                    actionId === 'vasopressin'   ? -6  : -5;
     return {
       bpChange: bpDrop,
-      message: `❌ ${action.label}: ПОГІРШЕННЯ! При ${SHOCK_PROFILES[shockType].labelShort} ця дія протипоказана або неефективна.`,
+      message: ua ? `❌ ${action.label}: ПОГІРШЕННЯ! При ${SHOCK_PROFILES[shockType].labelShort} ця дія протипоказана або неефективна.` : `❌ ${action.labelEn ?? action.label}: DETERIORATION! This action is contraindicated or ineffective for ${SHOCK_PROFILES[shockType].labelShort}.`,
       hint: SHOCK_PROFILES[shockType].ddxClue,
       isCausal: false,
-      penaltyNote: 'Неправильне лікування — погіршення стану',
+      penaltyNote: ua ? 'Неправильне лікування — погіршення стану' : 'Incorrect treatment — condition worsened',
     };
   }
 
   return {
     bpChange: 0,
-    message: `${action.label}: без ефекту.`,
+    message: ua ? `${action.label}: без ефекту.` : `${action.labelEn ?? action.label}: no effect.`,
     isCausal: false,
   };
 };
@@ -369,42 +372,44 @@ export const getHypotensionDebrief = (
   isCured: boolean,
   timeMin: number,
   penaltyActions: string[],
+  lang: Lang = 'ua',
 ) => {
+  const ua = lang === 'ua';
   const profile = SHOCK_PROFILES[shockType];
   const correctTreatment = TREATMENT_ACTIONS.find(a => a.effectiveFor.includes(shockType));
 
   const items = [
     {
       ok: testsPerformed.includes('cvp'),
-      text: 'Перевірено ЦВТ (перший крок диференційної діагностики)',
+      text: ua ? 'Перевірено ЦВТ (перший крок диференційної діагностики)' : 'CVP checked (first step of differential diagnosis)',
     },
     {
       ok: testsPerformed.includes('echo'),
-      text: 'Виконано ехокардіографію',
+      text: ua ? 'Виконано ехокардіографію' : 'Echocardiography performed',
     },
     {
       ok: testsPerformed.includes('lactate'),
-      text: 'Замовлено лактат',
+      text: ua ? 'Замовлено лактат' : 'Lactate ordered',
     },
     {
       ok: testsPerformed.includes('plr'),
-      text: 'Виконано PLR-тест (тест на волемочутливість)',
+      text: ua ? 'Виконано PLR-тест (тест на волемочутливість)' : 'PLR test performed (fluid responsiveness test)',
     },
     {
       ok: diagnosisConfirmed,
-      text: `Правильно встановлено діагноз: ${profile.label}`,
+      text: ua ? `Правильно встановлено діагноз: ${profile.label}` : `Correct diagnosis established: ${profile.label}`,
     },
     {
       ok: correctTreatment ? treatmentHistory.includes(correctTreatment.id) : false,
-      text: `Призначено правильне лікування: ${correctTreatment?.label ?? '—'}`,
+      text: ua ? `Призначено правильне лікування: ${correctTreatment?.label ?? '—'}` : `Correct treatment prescribed: ${correctTreatment?.labelEn ?? correctTreatment?.label ?? '—'}`,
     },
     {
       ok: penaltyActions.length === 0,
-      text: 'Не застосовувались шкідливі або виключно симптоматичні дії',
+      text: ua ? 'Не застосовувались шкідливі або виключно симптоматичні дії' : 'No harmful or purely symptomatic actions used',
     },
     {
       ok: isCured && timeMin < 15,
-      text: 'Стабілізація досягнута своєчасно (до 15 хв)',
+      text: ua ? 'Стабілізація досягнута своєчасно (до 15 хв)' : 'Stabilization achieved in time (within 15 min)',
     },
   ];
 
@@ -413,10 +418,10 @@ export const getHypotensionDebrief = (
     score: items.filter(i => i.ok).length,
     total: items.length,
     keyPoints: [
-      `Тип шоку: ${profile.label}`,
-      `Механізм: ${profile.mechanism}`,
-      `Ключ до діагнозу: ${profile.ddxClue}`,
-      `Пастка: ${profile.trapClue}`,
+      ua ? `Тип шоку: ${profile.label}` : `Shock type: ${profile.label}`,
+      ua ? `Механізм: ${profile.mechanism}` : `Mechanism: ${profile.mechanism}`,
+      ua ? `Ключ до діагнозу: ${profile.ddxClue}` : `Diagnostic key: ${profile.ddxClue}`,
+      ua ? `Пастка: ${profile.trapClue}` : `Pitfall: ${profile.trapClue}`,
     ],
   };
 };
