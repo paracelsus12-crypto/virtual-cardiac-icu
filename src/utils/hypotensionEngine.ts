@@ -38,8 +38,8 @@ export interface ShockProfile {
   hrIncreasePerMin: number;
 
   // Підказки диференційної діагностики
-  ddxClue: string;
-  trapClue: string;            // "пастка" — чим схожий на інший тип
+  ddxClue: string; ddxClueEn?: string;
+  trapClue: string; trapClueEn?: string;            // "пастка" — чим схожий на інший тип
 }
 
 export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
@@ -54,6 +54,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     bpDeclinePerMin: 3.0, hrIncreasePerMin: 2.5,
     ddxClue: 'Низький АТ + НИЗЬКИЙ ЦВТ + позитивний PLR-тест',
     trapClue: 'На початку схожий на вазоплегію — обидва мають низький ЦВТ',
+    ddxClueEn: 'Low BP + LOW CVP + positive PLR test',
+    trapClueEn: 'Initially similar to vasoplegia — both have low CVP',
   },
   cardiogenic: {
     type: 'cardiogenic',
@@ -67,6 +69,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     bpDeclinePerMin: 4.0, hrIncreasePerMin: 2.0,
     ddxClue: 'Низький АТ + ВИСОКИЙ ЦВТ + низька ФВ на ехо + ST-зміни',
     trapClue: 'Схожий на тампонаду — обидва мають високий ЦВТ. Різниця: ехо покаже ФВ',
+    ddxClueEn: 'Low BP + HIGH CVP + low EF on echo + ST changes',
+    trapClueEn: 'Similar to tamponade — both have high CVP. Difference: echo shows EF',
   },
   distributive_sepsis: {
     type: 'distributive_sepsis',
@@ -79,6 +83,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     bpDeclinePerMin: 2.5, hrIncreasePerMin: 3.0,
     ddxClue: 'Низький АТ + низький/норм ЦВТ + ТЕПЛА шкіра + лактат > 4 + гарячка',
     trapClue: 'Схожий на гіповолемію — обидва мають низький ЦВТ. Але шкіра тепла!',
+    ddxClueEn: 'Low BP + low/normal CVP + WARM skin + lactate > 4 + fever',
+    trapClueEn: 'Similar to hypovolemia — both have low CVP. But skin is warm!',
   },
   distributive_vasoplegia: {
     type: 'distributive_vasoplegia',
@@ -91,6 +97,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     bpDeclinePerMin: 3.5, hrIncreasePerMin: 1.5,
     ddxClue: 'Низький АТ + низький ЦВТ + ТЕПЛА шкіра + анамнез ШК + нормальний лактат',
     trapClue: 'Схожий на гіповолемію, але рідина не допомагає — потрібен норадреналін',
+    ddxClueEn: 'Low BP + low CVP + WARM skin + CPB history + normal lactate',
+    trapClueEn: 'Similar to hypovolemia, but fluids do not help — norepinephrine needed',
   },
   obstructive: {
     type: 'obstructive',
@@ -103,6 +111,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
     bpDeclinePerMin: 4.5, hrIncreasePerMin: 2.5,
     ddxClue: 'Низький АТ + ДУЖЕ ВИСОКИЙ ЦВТ + ехо покаже причину',
     trapClue: 'Схожий на кардіогенний — обидва мають високий ЦВТ. Ехо — ключ до діагнозу',
+    ddxClueEn: 'Low BP + VERY HIGH CVP + echo shows cause',
+    trapClueEn: 'Similar to cardiogenic — both have high CVP. Echo is key to diagnosis',
   },
 };
 

@@ -154,7 +154,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
       setLog(prev => [{
         time: timeMin,
         message: lang === 'ua' ? `✅ Діагноз підтверджено: ${SHOCK_PROFILES[guess].label}` : `✅ Diagnosis confirmed: ${SHOCK_PROFILES[guess].labelEn ?? SHOCK_PROFILES[guess].label}`,
-        hint: SHOCK_PROFILES[guess].ddxClue,
+        hint: lang === 'ua' ? SHOCK_PROFILES[guess].ddxClue : (SHOCK_PROFILES[guess].ddxClueEn ?? SHOCK_PROFILES[guess].ddxClue),
         type: 'good',
       }, ...prev]);
       playBeep(880, 0.15, 0.3);
@@ -162,7 +162,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
       setLog(prev => [{
         time: timeMin,
         message: lang === 'ua' ? `❌ Невірний діагноз: ${SHOCK_PROFILES[guess].label}. Подивіться на ${revealedTests.has('cvp') ? 'ЦВТ та ' : ''}інші маркери уважніше.` : `❌ Wrong diagnosis: ${SHOCK_PROFILES[guess].labelEn ?? SHOCK_PROFILES[guess].label}. Review ${revealedTests.has('cvp') ? 'CVP and ' : ''}other markers carefully.`,
-        hint: SHOCK_PROFILES[guess].trapClue,
+        hint: lang === 'ua' ? SHOCK_PROFILES[guess].trapClue : (SHOCK_PROFILES[guess].trapClueEn ?? SHOCK_PROFILES[guess].trapClue),
         type: 'bad',
       }, ...prev]);
       playBeep(330, 0.15, 0.3);
@@ -271,7 +271,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
           <div>
             <span className="font-bold text-white text-sm">{t("hypoTitle", lang as Lang)}</span>
             <span className="ml-2 text-[10px] bg-orange-900/30 text-orange-300 border border-orange-800/40 px-1.5 py-0.5 rounded">
-              АТ {currentSystolic} мм рт.ст.
+              {lang === 'ua' ? 'АТ' : 'BP'} {currentSystolic} {lang === 'ua' ? 'мм рт.ст.' : 'mmHg'}
             </span>
           </div>
         </div>
@@ -302,7 +302,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
 
           {/* Криві */}
           <WaveformCanvas buffer={ecgBuffer} color="#22c55e"
-            label={shockType === 'cardiogenic' ? 'ЕКГ — ST-депресія V4-V6 ⚠️' : 'ЕКГ II'}
+            label={shockType === 'cardiogenic' ? (lang === 'ua' ? 'ЕКГ — ST-депресія V4-V6 ⚠️' : 'ECG — ST depression V4-V6 ⚠️') : 'ECG II'}
             height={100} critical={shockType === 'cardiogenic'} />
           <WaveformCanvas buffer={abpBuffer} color="#ef4444" fillColor="rgba(239,68,68,0.07)"
             label="АТ" currentValue={`${currentSystolic}/${Math.round(currentSystolic*0.65)}`}
@@ -314,9 +314,9 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
               Монітор — видимі показники
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <NumCard label="АТ сист." value={String(currentSystolic)} unit="mmHg" color={bpColor} warn={currentSystolic < 90} />
-              <NumCard label="ЧСС" value={String(currentHR)} unit="bpm" color={currentHR > 120 ? '#f59e0b' : '#22c55e'} warn={currentHR > 120} />
-              <NumCard label="Діурез" value={String(currentUO)} unit={lang === 'ua' ? 'мл/год' : 'ml/hr'} color={currentUO < 20 ? '#ef4444' : '#22c55e'} warn={currentUO < 20} />
+              <NumCard {...{label: lang === "ua" ? "АТ сист." : "SBP"}} value={String(currentSystolic)} unit="mmHg" color={bpColor} warn={currentSystolic < 90} />
+              <NumCard label={lang === 'ua' ? 'ЧСС' : 'HR'} value={String(currentHR)} unit="bpm" color={currentHR > 120 ? '#f59e0b' : '#22c55e'} warn={currentHR > 120} />
+              <NumCard label={lang === 'ua' ? 'Діурез' : 'Urine Output'} value={String(currentUO)} unit={lang === 'ua' ? 'мл/год' : 'ml/hr'} color={currentUO < 20 ? '#ef4444' : '#22c55e'} warn={currentUO < 20} />
             </div>
           </div>
 
@@ -360,7 +360,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
             <div className={`rounded border p-3 ${diagnosisConfirmed ? 'bg-green-950/20 border-green-700/40' : 'bg-red-950/20 border-red-700/40'}`}>
               <div className="text-[9px] font-bold uppercase tracking-widest mb-1 text-gray-500">{t("hypoDxIntern", lang as Lang)}</div>
               <p className={`text-sm font-bold ${diagnosisConfirmed ? 'text-green-400' : 'text-red-400'}`}>
-                {diagnosisConfirmed ? '✅ ' : '❌ '}{SHOCK_PROFILES[diagnosisGuess].label}
+                {diagnosisConfirmed ? '✅ ' : '❌ '}{lang === 'ua' ? SHOCK_PROFILES[diagnosisGuess].label : (SHOCK_PROFILES[diagnosisGuess].labelEn ?? SHOCK_PROFILES[diagnosisGuess].label)}
               </p>
             </div>
           )}
