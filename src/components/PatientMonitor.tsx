@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Patient } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Volume2, VolumeX, Settings, Zap, Droplets, TrendingDown, Activity } from 'lucide-react';
+import { Volume2, VolumeX, Settings, Zap, Droplets, TrendingDown, Activity, Wind } from 'lucide-react';
 import WaveformCanvas from './WaveformCanvas';
 import ResuscitationPanel from './ResuscitationPanel';
 import TamponadeScenario from './TamponadeScenario';
 import HypotensionScenario from './HypotensionScenario';
 import BleedingScenario from './BleedingScenario';
 import AFibScenario from './AFibScenario';
+import ACLFScenario from './ACLFScenario';
 import {
   generateECGBuffer, generateABPBuffer, generateSpO2Buffer,
   getDisplayHR, RhythmType, RHYTHM_LABELS, RHYTHM_SEVERITY,
@@ -78,6 +79,7 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
   const [showHypotension, setShowHypotension] = useState(false);
   const [showBleeding, setShowBleeding] = useState(false);
   const [showAFib, setShowAFib] = useState(false);
+  const [showACLF, setShowACLF] = useState(false);
   const [vfibAmplitude, setVfibAmplitude]     = useState(1.0);
   const [showRhythmSelector, setShowRhythmSelector] = useState(false);
   const [currentBP, setCurrentBP]             = useState(patient.currentVitals.bloodPressure);
@@ -246,6 +248,11 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
             className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
             style={{ background:'#1a1a00', color:'#ffdd44', border:'1px solid #444400' }}>
             <Zap size={11}/> {lang === 'ua' ? 'ФП' : 'AF'}
+          </button>
+          <button onClick={() => setShowACLF(true)}
+            className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{ background:'#001a2a', color:'#44aaff', border:'1px solid #003366' }}>
+            <Wind size={11}/> {lang === 'ua' ? 'ГЛШ-Н' : 'ACLF'}
           </button>
 
           {/* Rhythm */}
@@ -509,6 +516,12 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
             patientName={patient.name} surgeryType={patient.surgeryType}
             speed={speed} lang={lang}
             onClose={() => setShowAFib(false)} />
+        )}
+        {showACLF && (
+          <ACLFScenario key={`aclf-${scenarioKey}`}
+            patientName={patient.name} surgeryType={patient.surgeryType}
+            speed={speed} lang={lang}
+            onClose={() => setShowACLF(false)} />
         )}
       </AnimatePresence>
     </div>
