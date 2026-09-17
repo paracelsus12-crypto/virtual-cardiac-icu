@@ -16,6 +16,9 @@ interface AFibScenarioProps {
   surgeryType?: string;
   speed?: number;
   lang?: Lang;
+  mode?: 'teacher' | 'intern' | null;
+  isPaused?: boolean;
+  onPause?: () => void;
   onClose: () => void;
 }
 
@@ -28,8 +31,9 @@ interface LogEntry {
 }
 
 const AFibScenario: React.FC<AFibScenarioProps> = ({
-  patientName = '', surgeryType = '', speed = 1.0, lang = 'ua', onClose,
+  patientName = '', surgeryType = '', speed = 1.0, lang = 'ua', mode = 'intern', isPaused = false, onPause, onClose,
 }) => {
+  const isTeacher = mode === 'teacher';
   const ua = lang === 'ua';
   const [variant] = useState<AFibVariant>(() => pickAFibVariant(surgeryType));
   const profile = AFIB_PROFILES[variant];
@@ -56,7 +60,7 @@ const AFibScenario: React.FC<AFibScenarioProps> = ({
 
   // Прогресія без лікування
   useEffect(() => {
-    if (!isStarted || rhythmRestored || isStabilized || isArrested) return;
+    if (!isStarted || rhythmRestored || isStabilized || isArrested || isPaused) return;
     const id = window.setInterval(() => {
       setTimeMin(t => +(t + 0.1).toFixed(2));
       setCurrentSystolic(s => {
@@ -321,6 +325,13 @@ const AFibScenario: React.FC<AFibScenarioProps> = ({
               <span className={timeMin > 10 ? 'text-red-400 font-bold' : 'text-white'}>{fmt(timeMin)}</span>
             </div>
           )}
+            {isStarted && onPause && isTeacher && (
+              <button onClick={onPause}
+                className="px-2 py-1 rounded text-xs font-bold border"
+                style={{ background: isPaused ? '#005500' : '#2a1a00', color: isPaused ? '#44ff88' : '#ffaa44', border: '1px solid ' + (isPaused ? '#008800' : '#553300') }}>
+                {isPaused ? (lang === 'ua' ? '▶ ПРОДОВЖИТИ' : '▶ RESUME') : (lang === 'ua' ? '⏸ ПАУЗА' : '⏸ PAUSE')}
+              </button>
+            )}
           <button onClick={onClose} className="p-1 hover:bg-white/5 rounded text-gray-500">
             <X size={16}/>
           </button>
@@ -504,6 +515,22 @@ const AFibScenario: React.FC<AFibScenarioProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Pause overlay */}
+      {isPaused && (
+        <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-40">
+          <div className="text-center">
+            <p className="text-white font-bold text-2xl mb-2">⏸ {lang === 'ua' ? 'ПАУЗА' : 'PAUSED'}</p>
+            {onPause && (
+              <button onClick={onPause}
+                className="px-6 py-2 rounded font-bold text-sm mt-2"
+                style={{ background: '#005500', color: '#44ff88', border: '1px solid #008800' }}>
+                {lang === 'ua' ? '▶ Продовжити' : '▶ Resume'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Arrest overlay */}
       <AnimatePresence>

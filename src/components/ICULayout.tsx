@@ -6,6 +6,8 @@ import { motion } from 'motion/react';
 
 interface ICULayoutProps {
   lang?: 'ua' | 'en';
+  mode?: 'teacher' | 'intern' | null;
+  onModeChange?: () => void;
   onLangToggle?: () => void;
   children: React.ReactNode;
   alertCount: number;
@@ -13,7 +15,7 @@ interface ICULayoutProps {
   onShowAlerts: () => void;
 }
 
-export const ICULayout: React.FC<ICULayoutProps> = ({ children, alertCount, bedCount, lang = 'ua', onLangToggle, onShowAlerts }) => {
+export const ICULayout: React.FC<ICULayoutProps> = ({ children, alertCount, bedCount, lang = 'ua', mode, onModeChange, onLangToggle, onShowAlerts }) => {
   return (
     <div className="flex h-screen w-full bg-[#0B0E14] text-gray-300 overflow-hidden font-sans flex-col">
       {/* Header Navigation */}

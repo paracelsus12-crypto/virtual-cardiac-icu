@@ -17,6 +17,9 @@ interface TamponadeScenarioProps {
   surgeryType: string;
   speed?: number;
   lang?: Lang;
+  mode?: 'teacher' | 'intern' | null;
+  isPaused?: boolean;
+  onPause?: () => void;
   onClose: () => void;
 }
 
@@ -28,8 +31,9 @@ interface LogEntry {
 }
 
 const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
-  patientName, surgeryType, speed = 1.0, lang = 'ua', onClose,
+  patientName, surgeryType, speed = 1.0, lang = 'ua', mode = 'intern', isPaused = false, onPause, onClose,
 }) => {
+  const isTeacher = mode === 'teacher';
   const category: SurgeryCategory = getSurgeryCategory(surgeryType);
   const isOpen = category === 'open';
   const actions = getActionsForCategory(category);
@@ -417,6 +421,22 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Pause overlay */}
+      {isPaused && (
+        <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-40">
+          <div className="text-center">
+            <p className="text-white font-bold text-2xl mb-2">⏸ {lang === 'ua' ? 'ПАУЗА' : 'PAUSED'}</p>
+            {onPause && (
+              <button onClick={onPause}
+                className="px-6 py-2 rounded font-bold text-sm mt-2"
+                style={{ background: '#005500', color: '#44ff88', border: '1px solid #008800' }}>
+                {lang === 'ua' ? '▶ Продовжити' : '▶ Resume'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Arrest overlay */}
       <AnimatePresence>

@@ -15,6 +15,7 @@ export default function App() {
   const [agreed, setAgreed] = useState(() => sessionStorage.getItem('icu_agreed') === '1');
   const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('icu_lang') as Lang) || 'ua');
   const toggleLang = () => setLang(l => { const n = l === 'ua' ? 'en' : 'ua'; localStorage.setItem('icu_lang', n); return n; });
+  const [mode, setMode] = useState<'teacher' | 'intern' | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [alerts, setAlerts] = useState<ICUAlert[]>([]);
@@ -139,11 +140,84 @@ export default function App() {
     );
   }
 
+
+  // ---- Mode selection screen ----
+  if (!mode) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ background: '#000810' }}>
+        <div className="w-full max-w-2xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: '#001828', border: '1px solid #0d4060' }}>
+                <span className="text-blue-400 font-bold text-sm">V</span>
+              </div>
+              <h1 className="text-white font-bold text-xl tracking-wide">V-ICU</h1>
+            </div>
+            <p className="text-sm" style={{ color: '#446688' }}>
+              {lang === 'ua' ? 'Оберіть режим роботи' : 'Select working mode'}
+            </p>
+            <button onClick={toggleLang}
+              className="mt-2 px-2 py-0.5 rounded text-xs font-bold"
+              style={{ background:'#001828', color:'#4488aa', border:'1px solid #0d2035' }}>
+              {lang === 'ua' ? 'EN' : 'UA'}
+            </button>
+          </div>
+
+          {/* Mode cards */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Teacher */}
+            <button onClick={() => setMode('teacher')}
+              className="group p-6 rounded-xl text-left transition-all hover:scale-[1.02]"
+              style={{ background: '#000f1e', border: '1px solid #0d4060' }}>
+              <div className="text-4xl mb-3">👨‍🏫</div>
+              <h2 className="font-bold text-white text-lg mb-2">
+                {lang === 'ua' ? 'Режим викладача' : 'Teacher Mode'}
+              </h2>
+              <ul className="space-y-1.5 text-sm" style={{ color: '#446688' }}>
+                <li>✓ {lang === 'ua' ? 'Вибір варіанту сценарію' : 'Select scenario variant'}</li>
+                <li>✓ {lang === 'ua' ? 'Пауза під час сценарію' : 'Pause during scenario'}</li>
+                <li>✓ {lang === 'ua' ? 'Підказки для інтерна' : 'Hints for intern'}</li>
+                <li>✓ {lang === 'ua' ? 'Контроль швидкості' : 'Speed control'}</li>
+                <li>✓ {lang === 'ua' ? 'Перегляд правильних відповідей' : 'View correct answers'}</li>
+              </ul>
+            </button>
+
+            {/* Intern */}
+            <button onClick={() => setMode('intern')}
+              className="group p-6 rounded-xl text-left transition-all hover:scale-[1.02]"
+              style={{ background: '#000f1e', border: '1px solid #0d4060' }}>
+              <div className="text-4xl mb-3">👨‍⚕️</div>
+              <h2 className="font-bold text-white text-lg mb-2">
+                {lang === 'ua' ? 'Режим інтерна' : 'Intern Mode'}
+              </h2>
+              <ul className="space-y-1.5 text-sm" style={{ color: '#446688' }}>
+                <li>✓ {lang === 'ua' ? 'Вільний вибір сценарію' : 'Free scenario selection'}</li>
+                <li>✓ {lang === 'ua' ? 'Без підказок' : 'No hints'}</li>
+                <li>✓ {lang === 'ua' ? 'Оцінка в кінці' : 'Score at the end'}</li>
+                <li>✓ {lang === 'ua' ? 'Таймер' : 'Timer'}</li>
+                <li style={{ color: '#1a3a4a' }}>— {lang === 'ua' ? 'Пауза недоступна' : 'Pause unavailable'}</li>
+              </ul>
+            </button>
+          </div>
+
+          <p className="text-center text-xs mt-4" style={{ color: '#1a3a4a' }}>
+            {lang === 'ua' ? 'Режим можна змінити в будь-який момент' : 'Mode can be changed at any time'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ICULayout 
       alertCount={alerts.length}
       bedCount={patients.length}
       lang={lang}
+      mode={mode}
+      onModeChange={() => setMode(null)}
       onLangToggle={toggleLang}
       onShowAlerts={() => setShowAlertPanel(true)}
     >
@@ -179,6 +253,7 @@ export default function App() {
             <PatientMonitor 
               patient={selectedPatient}
               lang={lang}
+              mode={mode}
               onEdit={() => { setEditingPatient(selectedPatient); setShowPatientModal(true); }}
             />
           ) : (

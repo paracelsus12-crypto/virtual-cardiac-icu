@@ -24,6 +24,7 @@ import { Lang, t } from '../utils/i18n';
 interface PatientMonitorProps {
   patient: Patient;
   lang?: Lang;
+  mode?: 'teacher' | 'intern' | null;
   onEdit: () => void;
 }
 
@@ -68,7 +69,7 @@ const BUFFER_SIZE = 1000;
 const SAMPLE_RATE = 250;
 const UPDATE_MS   = 60;
 
-export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 'ua', onEdit }) => {
+export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 'ua', mode = 'intern', onEdit }) => {
   const [rhythm, setRhythm]                   = useState<RhythmType>('sinus');
   const [ecgBuffer, setEcgBuffer]             = useState<number[]>([]);
   const [abpBuffer, setAbpBuffer]             = useState<number[]>([]);
@@ -85,6 +86,7 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
   const [currentBP, setCurrentBP]             = useState(patient.currentVitals.bloodPressure);
   const [speed, setSpeed]                     = useState(1.0);
   const [scenarioKey, setScenarioKey]         = useState(0);
+  const [isPaused, setIsPaused]               = useState(false);
   const [now, setNow]                         = useState(new Date());
 
   const beepTimerRef = useRef<number>(0);
@@ -159,6 +161,7 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
   };
   const handleReset = () => {
     setScenarioKey(k => k+1);
+    setIsPaused(false);
     setShowResuscitation(false); setShowTamponade(false); setShowHypotension(false);
     setRhythm('sinus'); setVfibAmplitude(1.0);
     stopAlarm();
@@ -496,31 +499,31 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
         {showTamponade && (
           <TamponadeScenario key={`tamp-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
-            speed={speed} lang={lang}
+            speed={speed} lang={lang} mode={mode} isPaused={isPaused} onPause={() => setIsPaused(p => !p)}
             onClose={() => setShowTamponade(false)} />
         )}
         {showHypotension && (
           <HypotensionScenario key={`hypo-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
-            speed={speed} lang={lang}
+            speed={speed} lang={lang} mode={mode} isPaused={isPaused} onPause={() => setIsPaused(p => !p)}
             onClose={() => setShowHypotension(false)} />
         )}
         {showBleeding && (
           <BleedingScenario key={`bleed-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
-            speed={speed} lang={lang}
+            speed={speed} lang={lang} mode={mode} isPaused={isPaused} onPause={() => setIsPaused(p => !p)}
             onClose={() => setShowBleeding(false)} />
         )}
         {showAFib && (
           <AFibScenario key={`afib-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
-            speed={speed} lang={lang}
+            speed={speed} lang={lang} mode={mode} isPaused={isPaused} onPause={() => setIsPaused(p => !p)}
             onClose={() => setShowAFib(false)} />
         )}
         {showACLF && (
           <ACLFScenario key={`aclf-${scenarioKey}`}
             patientName={patient.name} surgeryType={patient.surgeryType}
-            speed={speed} lang={lang}
+            speed={speed} lang={lang} mode={mode} isPaused={isPaused} onPause={() => setIsPaused(p => !p)}
             onClose={() => setShowACLF(false)} />
         )}
       </AnimatePresence>
