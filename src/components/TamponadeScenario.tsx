@@ -281,10 +281,19 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
                 ▶ {lang === 'ua' ? 'СТАРТ' : 'START'}
               </button>
             ) : (
-              <div className="flex items-center gap-1 font-mono text-sm">
-                <Clock size={13} className="text-gray-500" />
-                <span className={timeMin > 10 ? 'text-red-400 font-bold' : 'text-white'}>{fmt(timeMin)}</span>
-                <span className="text-[9px] ml-1 opacity-50">{speed !== 1 ? `${speed}×` : ''}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 font-mono text-sm">
+                  <Clock size={13} className="text-gray-500" />
+                  <span className={timeMin > 10 ? 'text-red-400 font-bold' : 'text-white'}>{fmt(timeMin)}</span>
+                  <span className="text-[9px] ml-1 opacity-50">{speed !== 1 ? `${speed}×` : ''}</span>
+                </div>
+                {isTeacher && onPause && (
+                  <button onClick={onPause}
+                    className="px-2 py-1 rounded text-xs font-bold border"
+                    style={{ background: isPaused ? '#005500' : '#2a1a00', color: isPaused ? '#44ff88' : '#ffaa44', border: '1px solid ' + (isPaused ? '#008800' : '#553300') }}>
+                    {isPaused ? (lang === 'ua' ? '▶ ПРОДОВЖИТИ' : '▶ RESUME') : (lang === 'ua' ? '⏸ ПАУЗА' : '⏸ PAUSE')}
+                  </button>
+                )}
               </div>
             )}
           </div>
