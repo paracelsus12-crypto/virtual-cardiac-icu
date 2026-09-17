@@ -8,6 +8,7 @@ import ResuscitationPanel from './ResuscitationPanel';
 import TamponadeScenario from './TamponadeScenario';
 import HypotensionScenario from './HypotensionScenario';
 import BleedingScenario from './BleedingScenario';
+import AFibScenario from './AFibScenario';
 import {
   generateECGBuffer, generateABPBuffer, generateSpO2Buffer,
   getDisplayHR, RhythmType, RHYTHM_LABELS, RHYTHM_SEVERITY,
@@ -76,6 +77,7 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
   const [showTamponade, setShowTamponade]     = useState(false);
   const [showHypotension, setShowHypotension] = useState(false);
   const [showBleeding, setShowBleeding] = useState(false);
+  const [showAFib, setShowAFib] = useState(false);
   const [vfibAmplitude, setVfibAmplitude]     = useState(1.0);
   const [showRhythmSelector, setShowRhythmSelector] = useState(false);
   const [currentBP, setCurrentBP]             = useState(patient.currentVitals.bloodPressure);
@@ -239,6 +241,11 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
             className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
             style={{ background:'#2a0000', color:'#ff6666', border:'1px solid #550000' }}>
             <Activity size={11}/> {lang === 'ua' ? 'КРОВОТЕЧА' : 'BLEEDING'}
+          </button>
+          <button onClick={() => setShowAFib(true)}
+            className="px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1"
+            style={{ background:'#1a1a00', color:'#ffdd44', border:'1px solid #444400' }}>
+            <Zap size={11}/> {lang === 'ua' ? 'ФП' : 'AF'}
           </button>
 
           {/* Rhythm */}
@@ -496,6 +503,12 @@ export const PatientMonitor: React.FC<PatientMonitorProps> = ({ patient, lang = 
             patientName={patient.name} surgeryType={patient.surgeryType}
             speed={speed} lang={lang}
             onClose={() => setShowBleeding(false)} />
+        )}
+        {showAFib && (
+          <AFibScenario key={`afib-${scenarioKey}`}
+            patientName={patient.name} surgeryType={patient.surgeryType}
+            speed={speed} lang={lang}
+            onClose={() => setShowAFib(false)} />
         )}
       </AnimatePresence>
     </div>
