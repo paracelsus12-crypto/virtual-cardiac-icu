@@ -205,9 +205,9 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
               {isOpen ? '🏥 Після відкритої операції — алгоритм' : '🔵 Після катетерного втручання — алгоритм'}
             </p>
             {isOpen ? (
-              <p className="text-gray-300">Ехо (орієнтовно) → Виклик хірурга → Рідина (міст) → <strong className="text-orange-300">Реексплорація</strong> — метод вибору. Перикардіоцентез не вирішує проблему згустків.</p>
+              <p className="text-gray-300">{lang === 'ua' ? 'Ехо (орієнтовно) → Виклик хірурга → Рідина (міст) → ' : 'Echo (tentative) → Call surgeon → Fluid (bridge) → '}<strong className="text-orange-300">{lang === 'ua' ? 'Реексплорація' : 'Re-exploration'}</strong>{lang === 'ua' ? ' — метод вибору. Перикардіоцентез не вирішує проблему згустків.' : ' — method of choice. Pericardiocentesis does not solve clot problem.'}</p>
             ) : (
-              <p className="text-gray-300">Ехо (підтвердження) → Виклик колеги → Рідина (міст) → <strong className="text-blue-300">Перикардіоцентез</strong> — метод вибору. Реексплорація — лише при невдачі.</p>
+              <p className="text-gray-300">{lang === 'ua' ? 'Ехо (підтвердження) → Виклик колеги → Рідина (міст) → ' : 'Echo (confirmation) → Call colleague → Fluid (bridge) → '}<strong className="text-blue-300">{lang === 'ua' ? 'Перикардіоцентез' : 'Pericardiocentesis'}</strong>{lang === 'ua' ? ' — метод вибору. Реексплорація — лише при невдачі.' : ' — method of choice. Re-exploration only if failed.'}</p>
             )}
           </div>
 
@@ -225,11 +225,11 @@ const TamponadeScenario: React.FC<TamponadeScenarioProps> = ({
           <div className="bg-gray-900 rounded p-3 mb-4 text-[11px] text-gray-300 leading-relaxed space-y-1">
             <p className="font-bold text-white text-xs">{t("tampKeyPoints", lang as Lang)}:</p>
             <p>• Тріада Бека: гіпотензія + ↑ЦВТ + глухі тони / ↓ вольтаж ЕКГ</p>
-            <p>• Electrical alternans — патогномонічна ознака тампонади</p>
-            <p>• Раптове припинення виділень по дренажах після відкритої операції — перший сигнал</p>
+            <p>• Electrical alternans — {lang === 'ua' ? 'патогномонічна ознака тампонади' : 'pathognomonic sign of tamponade'}</p>
+            <p>• {lang === 'ua' ? 'Раптове припинення виділень по дренажах після відкритої операції — перший сигнал' : 'Sudden cessation of drain output after open surgery — first warning sign'}</p>
             {isOpen
-              ? <p>• Ехо після відкритої операції може бути <strong>хибнонегативним</strong> (локальні згустки)</p>
-              : <p>• Парадоксальний пульс &gt;10 мм рт.ст. — важлива клінічна ознака</p>
+              ? <p>• {lang === 'ua' ? 'Ехо після відкритої операції може бути ' : 'Echo after open surgery may be '}<strong>{lang === 'ua' ? 'хибнонегативним' : 'false-negative'}</strong>{lang === 'ua' ? ' (локальні згустки)' : ' (local clots)'}</p>
+              : <p>• {lang === 'ua' ? 'Парадоксальний пульс >10 мм рт.ст. — важлива клінічна ознака' : 'Paradoxical pulse >10 mmHg — important clinical sign'}</p>
             }
           </div>
 

@@ -137,7 +137,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
     if ((cooldowns[testId] || 0) > 0 || revealedTests.has(testId)) return;
     resumeAudioContext();
     const test = DIAGNOSTIC_TESTS.find(t => t.id === testId)!;
-    const result = test.revealsFor[shockType] ?? 'Без відхилень';
+    const result = (lang === 'ua' ? test.revealsFor[shockType] : (test.revealsForEn?.[shockType] ?? test.revealsFor[shockType])) ?? (lang === 'ua' ? 'Без відхилень' : 'No abnormalities');
     setCooldowns(prev => ({ ...prev, [testId]: test.cooldown }));
     setRevealedTests(prev => new Set([...prev, testId]));
     setTestsPerformed(prev => [...prev, testId]);
@@ -153,7 +153,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
       setDiagnosisConfirmed(true);
       setLog(prev => [{
         time: timeMin,
-        message: `✅ Діагноз підтверджено: ${SHOCK_PROFILES[guess].label}`,
+        message: lang === 'ua' ? `✅ Діагноз підтверджено: ${SHOCK_PROFILES[guess].label}` : `✅ Diagnosis confirmed: ${SHOCK_PROFILES[guess].labelEn ?? SHOCK_PROFILES[guess].label}`,
         hint: SHOCK_PROFILES[guess].ddxClue,
         type: 'good',
       }, ...prev]);
@@ -161,7 +161,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
     } else {
       setLog(prev => [{
         time: timeMin,
-        message: `❌ Невірний діагноз: ${SHOCK_PROFILES[guess].label}. Подивіться на ${revealedTests.has('cvp') ? 'ЦВТ та ' : ''}інші маркери уважніше.`,
+        message: lang === 'ua' ? `❌ Невірний діагноз: ${SHOCK_PROFILES[guess].label}. Подивіться на ${revealedTests.has('cvp') ? 'ЦВТ та ' : ''}інші маркери уважніше.` : `❌ Wrong diagnosis: ${SHOCK_PROFILES[guess].labelEn ?? SHOCK_PROFILES[guess].label}. Review ${revealedTests.has('cvp') ? 'CVP and ' : ''}other markers carefully.`,
         hint: SHOCK_PROFILES[guess].trapClue,
         type: 'bad',
       }, ...prev]);
@@ -316,7 +316,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <NumCard label="АТ сист." value={String(currentSystolic)} unit="mmHg" color={bpColor} warn={currentSystolic < 90} />
               <NumCard label="ЧСС" value={String(currentHR)} unit="bpm" color={currentHR > 120 ? '#f59e0b' : '#22c55e'} warn={currentHR > 120} />
-              <NumCard label="Діурез" value={String(currentUO)} unit="мл/год" color={currentUO < 20 ? '#ef4444' : '#22c55e'} warn={currentUO < 20} />
+              <NumCard label="Діурез" value={String(currentUO)} unit={lang === 'ua' ? 'мл/год' : 'ml/hr'} color={currentUO < 20 ? '#ef4444' : '#22c55e'} warn={currentUO < 20} />
             </div>
           </div>
 
@@ -328,27 +328,27 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
               </div>
               <div className="space-y-1">
                 {revealedTests.has('cvp') && (
-                  <RevealedRow icon="📊" label="ЦВТ" value={`${profile.cvp} мм рт.ст.`}
+                  <RevealedRow icon="📊" label={lang === 'ua' ? 'ЦВТ' : 'CVP'} value={lang === 'ua' ? `${profile.cvp} мм рт.ст.` : `${profile.cvp} mmHg`}
                     status={profile.cvp < 6 ? 'low' : profile.cvp > 15 ? 'high' : 'normal'} />
                 )}
                 {revealedTests.has('skin_temp') && (
-                  <RevealedRow icon="🌡️" label="Температура шкіри"
-                    value={profile.skinTemp === 'warm' ? 'Тепла, рожева' : 'Холодна, бліда'}
+                  <RevealedRow icon="🌡️" label={lang === 'ua' ? 'Температура шкіри' : 'Skin Temperature'}
+                    value={profile.skinTemp === 'warm' ? lang === 'ua' ? 'Тепла, рожева' : 'Warm, pink' : lang === 'ua' ? 'Холодна, бліда' : 'Cold, pale'}
                     status={profile.skinTemp === 'warm' ? 'warm' : 'cold'} />
                 )}
                 {revealedTests.has('lactate') && (
-                  <RevealedRow icon="🧪" label="Лактат"
-                    value={`${profile.lactate} ммоль/л`}
+                  <RevealedRow icon="🧪" label={lang === 'ua' ? 'Лактат' : 'Lactate'}
+                    value={lang === 'ua' ? `${profile.lactate} ммоль/л` : `${profile.lactate} mmol/L`}
                     status={profile.lactate > 4 ? 'high' : profile.lactate > 2 ? 'mid' : 'normal'} />
                 )}
                 {revealedTests.has('echo') && (
-                  <RevealedRow icon="🔵" label="ЕхоКС"
-                    value={profile.ef ? `ФВ ${profile.ef}%` : 'ФВ норм.'}
+                  <RevealedRow icon="🔵" label={lang === 'ua' ? 'ЕхоКС' : 'Echo'}
+                    value={profile.ef ? `ФВ ${profile.ef}%` : lang === 'ua' ? 'ФВ норм.' : 'EF normal'}
                     status={profile.ef && profile.ef < 35 ? 'high' : 'normal'} />
                 )}
                 {revealedTests.has('plr') && (
-                  <RevealedRow icon="🦵" label="PLR-тест"
-                    value={['hypovolemic'].includes(shockType) ? '✅ ПОЗИТИВНИЙ' : '❌ НЕГАТИВНИЙ'}
+                  <RevealedRow icon="🦵" label={lang === 'ua' ? 'PLR-тест' : 'PLR Test'}
+                    value={['hypovolemic'].includes(shockType) ? lang === 'ua' ? '✅ ПОЗИТИВНИЙ' : '✅ POSITIVE' : lang === 'ua' ? '❌ НЕГАТИВНИЙ' : '❌ NEGATIVE'}
                     status={['hypovolemic'].includes(shockType) ? 'normal' : 'high'} />
                 )}
               </div>
@@ -409,8 +409,8 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
                   diagnosisGuess ? 'bg-red-900/20 border-red-700/40 text-red-400' :
                   'bg-indigo-700 hover:bg-indigo-600 border-indigo-500 text-white'}`}>
               <HelpCircle size={13}/>
-              {diagnosisConfirmed ? `✅ ${SHOCK_PROFILES[shockType].labelShort}` :
-               diagnosisGuess ? '❌ Спробуйте ще' : 'Встановити діагноз'}
+              {diagnosisConfirmed ? lang === 'ua' ? `✅ ${SHOCK_PROFILES[shockType].labelShort}` : `✅ ${SHOCK_PROFILES[shockType].labelEn ?? SHOCK_PROFILES[shockType].labelShort}` :
+               diagnosisGuess ? lang === 'ua' ? '❌ Спробуйте ще' : '❌ Try again' : lang === 'ua' ? 'Встановити діагноз' : 'Set Diagnosis'}
             </button>
 
             <AnimatePresence>
@@ -420,7 +420,7 @@ const HypotensionScenario: React.FC<HypotensionScenarioProps> = ({
                   {(Object.keys(SHOCK_PROFILES) as ShockType[]).map(type => (
                     <button key={type} onClick={() => handleDiagnosis(type)}
                       className="w-full text-left px-2.5 py-1.5 rounded text-[11px] font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors">
-                      {SHOCK_PROFILES[type].label}
+                      {lang === 'ua' ? SHOCK_PROFILES[type].label : (SHOCK_PROFILES[type].labelEn ?? SHOCK_PROFILES[type].label)}
                     </button>
                   ))}
                 </motion.div>

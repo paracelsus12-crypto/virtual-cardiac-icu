@@ -16,8 +16,8 @@ export type ShockPhase = 'masked' | 'unmasking' | 'decompensating' | 'arrest';
 // ============================================================
 export interface ShockProfile {
   type: ShockType;
-  label: string;
-  labelShort: string;
+  label: string; labelEn: string;
+  labelShort: string; labelShortEn: string;
   mechanism: string;
   color: string;
 
@@ -45,8 +45,8 @@ export interface ShockProfile {
 export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
   hypovolemic: {
     type: 'hypovolemic',
-    label: 'Гіповолемічна гіпотензія',
-    labelShort: 'Гіповолемія',
+    label: 'Гіповолемічна гіпотензія', labelEn: 'Hypovolemic Hypotension',
+    labelShort: 'Гіповолемія', labelShortEn: 'Hypovolemia',
     mechanism: 'Дефіцит об\'єму циркулюючої крові',
     color: '#f59e0b',
     initialSystolic: 82, initialHR: 118, initialUO: 12,
@@ -57,8 +57,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
   },
   cardiogenic: {
     type: 'cardiogenic',
-    label: 'Кардіогенна гіпотензія',
-    labelShort: 'Кардіогенний шок',
+    label: 'Кардіогенна гіпотензія', labelEn: 'Cardiogenic Hypotension',
+    labelShort: 'Кардіогенний шок', labelShortEn: 'Cardiogenic Shock',
     mechanism: 'Серцева недостатність — міокард не забезпечує серцевий викид',
     color: '#ef4444',
     initialSystolic: 78, initialHR: 125, initialUO: 8,
@@ -70,8 +70,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
   },
   distributive_sepsis: {
     type: 'distributive_sepsis',
-    label: 'Дистрибутивна (сепсис)',
-    labelShort: 'Септичний шок',
+    label: 'Дистрибутивна (сепсис)', labelEn: 'Distributive (Sepsis)',
+    labelShort: 'Септичний шок', labelShortEn: 'Septic Shock',
     mechanism: 'Вазодилатація через системну запальну відповідь',
     color: '#a78bfa',
     initialSystolic: 80, initialHR: 128, initialUO: 18,
@@ -82,8 +82,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
   },
   distributive_vasoplegia: {
     type: 'distributive_vasoplegia',
-    label: 'Вазоплегія після ШК',
-    labelShort: 'Вазоплегія (post-CPB)',
+    label: 'Вазоплегія після ШК', labelEn: 'Vasoplegia (post-CPB)',
+    labelShort: 'Вазоплегія (post-CPB)', labelShortEn: 'Vasoplegia (post-CPB)',
     mechanism: 'Системна вазодилатація після штучного кровообігу',
     color: '#06b6d4',
     initialSystolic: 75, initialHR: 105, initialUO: 22,
@@ -94,8 +94,8 @@ export const SHOCK_PROFILES: Record<ShockType, ShockProfile> = {
   },
   obstructive: {
     type: 'obstructive',
-    label: 'Обструктивна гіпотензія',
-    labelShort: 'Обструкція (тампонада/ТЕЛА)',
+    label: 'Обструктивна гіпотензія', labelEn: 'Obstructive Hypotension',
+    labelShort: 'Обструкція (тампонада/ТЕЛА)', labelShortEn: 'Obstruction (tamponade/PE)',
     mechanism: 'Механічна перешкода кровотоку',
     color: '#f97316',
     initialSystolic: 76, initialHR: 122, initialUO: 10,
@@ -116,7 +116,8 @@ export interface DiagnosticTest {
   description: string;
   descEn: string;
   icon: string;
-  revealsFor: Partial<Record<ShockType, string>>;  // що показує для кожного типу
+  revealsFor: Partial<Record<ShockType, string>>;
+  revealsForEn?: Partial<Record<ShockType, string>>;
   cooldown: number;
 }
 
@@ -132,6 +133,13 @@ export const DIAGNOSTIC_TESTS: DiagnosticTest[] = [
       distributive_sepsis:    'ЦВТ = 6 мм рт.ст. — низький/норм',
       distributive_vasoplegia:'ЦВТ = 5 мм рт.ст. — низький',
       obstructive:            'ЦВТ = 24 мм рт.ст. ↑↑ — виражений застій',
+    },
+    revealsForEn: {
+      hypovolemic:            'CVP = 3 mmHg ↓↓ (normal 8-12)',
+      cardiogenic:            'CVP = 22 mmHg ↑↑ — venous congestion',
+      distributive_sepsis:    'CVP = 6 mmHg — low/normal',
+      distributive_vasoplegia:'CVP = 5 mmHg — low',
+      obstructive:            'CVP = 24 mmHg ↑↑ — severe congestion',
     },
     cooldown: 1,
   },
@@ -161,6 +169,13 @@ export const DIAGNOSTIC_TESTS: DiagnosticTest[] = [
       distributive_vasoplegia:'ЕхоКС: ФВ 58%, гіпердинамічний ЛШ, малі порожнини. Перикард чистий',
       obstructive:            'ЕхоКС: Рідина в перикарді, колапс ПШ. ТАМПОНАДА підтверджена',
     },
+    revealsForEn: {
+      hypovolemic:            'Echo: LV hyperdynamic, small chambers, EF 65%. Pericardium clear',
+      cardiogenic:            'Echo: EF 25% ↓↓. Anterior wall hypokinesis. Pericardium clear',
+      distributive_sepsis:    'Echo: EF 55%, hyperdynamic LV. Pericardium clear',
+      distributive_vasoplegia:'Echo: EF 58%, hyperdynamic LV, small chambers. Pericardium clear',
+      obstructive:            'Echo: Fluid in pericardium, RV collapse. TAMPONADE confirmed',
+    },
     cooldown: 3,
   },
   {
@@ -175,6 +190,13 @@ export const DIAGNOSTIC_TESTS: DiagnosticTest[] = [
       distributive_vasoplegia:'Лактат = 2.1 ммоль/л — норм/незначно підвищений. Перфузія відносно збережена',
       obstructive:            'Лактат = 5.2 ммоль/л ↑↑. Виражена гіпоперфузія через обструкцію',
     },
+    revealsForEn: {
+      hypovolemic:            'Lactate = 3.2 mmol/L ↑ (normal < 2.0). Moderate hypoperfusion',
+      cardiogenic:            'Lactate = 4.8 mmol/L ↑↑. Severe tissue hypoperfusion',
+      distributive_sepsis:    'Lactate = 6.1 mmol/L ↑↑↑. Critical hypoperfusion. Septic shock confirmed',
+      distributive_vasoplegia:'Lactate = 2.1 mmol/L — normal/slightly elevated. Perfusion relatively preserved',
+      obstructive:            'Lactate = 5.2 mmol/L ↑↑. Severe hypoperfusion due to obstruction',
+    },
     cooldown: 4,
   },
   {
@@ -188,6 +210,13 @@ export const DIAGNOSTIC_TESTS: DiagnosticTest[] = [
       distributive_sepsis:    'Шкіра ТЕПЛА, рожева (рання стадія). Вазодилатація. Симптом "теплого шоку"',
       distributive_vasoplegia:'Шкіра ТЕПЛА, рожева. Масивна вазодилатація після ШК',
       obstructive:            'Шкіра ХОЛОДНА, ціанотична. Критичне зниження серцевого викиду',
+    },
+    revealsForEn: {
+      hypovolemic:            'Skin COLD, moist, pale. Vasoconstriction — compensatory response',
+      cardiogenic:            'Skin COLD, mottled. Low cardiac output → vasoconstriction',
+      distributive_sepsis:    'Skin WARM, pink (early stage). Vasodilation. "Warm shock" sign',
+      distributive_vasoplegia:'Skin WARM, pink. Massive vasodilation after CPB',
+      obstructive:            'Skin COLD, cyanotic. Critical reduction in cardiac output',
     },
     cooldown: 1,
   },
